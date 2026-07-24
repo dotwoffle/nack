@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use regex::Regex;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     position: SourcePosition,
     value: String,
@@ -13,7 +13,7 @@ pub fn tokenize_source_string(source_string: &str) -> Vec<Token> {
     vec![]
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct SourcePosition {
     line: u64,
     column: u64,
@@ -41,6 +41,7 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
     m
 });
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -52,6 +53,9 @@ mod tests {
 
         assert!(regex_matches_entire_string(identifier_regex, "identifier"));
         assert!(regex_matches_entire_string(identifier_regex, "some_value"));
+        assert!(regex_matches_entire_string(identifier_regex, "someValue"));
+        assert!(regex_matches_entire_string(identifier_regex, "SomeValue"));
+        assert!(regex_matches_entire_string(identifier_regex, "sOmE_vAlUe"));
         assert!(regex_matches_entire_string(
             identifier_regex,
             "_private_value"
@@ -62,7 +66,7 @@ mod tests {
         assert!(regex_matches_entire_string(identifier_regex, "____"));
         assert!(regex_matches_entire_string(
             identifier_regex,
-            "a_1_r_5234234___"
+            "a_1_R_5234234___"
         ));
 
         assert!(!regex_matches_entire_string(identifier_regex, ""));
@@ -99,6 +103,76 @@ mod tests {
         assert!(!regex_matches_entire_string(ignore_regex, "foo\t"));
 
         Ok(())
+    }
+
+    #[test]
+    fn test_valid_source_strings_are_tokenized_correctly() {
+        let eof_value = "".to_owned();
+
+        assert!(
+            tokenize_source_string("")
+                == vec![Token {
+                    position: SourcePosition { line: 1, column: 1 },
+                    value: eof_value.clone(),
+                    kind: TokenKind::Eof
+                }]
+        );
+        assert!(
+            tokenize_source_string("  \n  ")
+                == vec![Token {
+                    position: SourcePosition { line: 2, column: 3 },
+                    value: eof_value.clone(),
+                    kind: TokenKind::Eof
+                }]
+        );
+        assert!(
+            tokenize_source_string("test")
+                == vec![
+                    Token {
+                        position: SourcePosition { line: 1, column: 1 },
+                        value: "test".to_owned(),
+                        kind: TokenKind::Identifier
+                    },
+                    Token {
+                        position: SourcePosition { line: 1, column: 3 },
+                        value: eof_value.clone(),
+                        kind: TokenKind::Eof
+                    }
+                ]
+        );
+        assert!(
+            tokenize_source_string("big_thing split   \n across multiple \n\nlines\n")
+                == vec![
+                    Token {
+                        position: SourcePosition { line: 1, column: 1 },
+                        value: "big_thing".to_owned(),
+                        kind: TokenKind::Identifier
+                    },
+                    Token {
+                        position: SourcePosition {
+                            line: 1,
+                            column: 11
+                        },
+                        value: "split".to_owned(),
+                        kind: TokenKind::Identifier
+                    },
+                    Token {
+                        position: SourcePosition { line: 2, column: 9 },
+                        value: "multiple".to_owned(),
+                        kind: TokenKind::Identifier
+                    },
+                    Token {
+                        position: SourcePosition { line: 4, column: 1 },
+                        value: "lines".to_owned(),
+                        kind: TokenKind::Identifier
+                    },
+                    Token {
+                        position: SourcePosition { line: 5, column: 1 },
+                        value: eof_value.clone(),
+                        kind: TokenKind::Eof
+                    }
+                ]
+        );
     }
 
     fn regex_matches_entire_string(pattern: &Regex, string: &str) -> bool {
