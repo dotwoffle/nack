@@ -2,30 +2,52 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use regex::Regex;
 
+/// This struct represents a single Nack language token, parsed from a source string. Tokens have a
+/// type, a position, and a string value, representing the token as it appeared within the source string.
 #[derive(Debug, PartialEq)]
 pub struct Token {
+    /// The position within the source string where the first character of this token is found.
     position: SourcePosition,
+    /// The string value of this token.
     value: String,
+    /// The type of token this is.
     kind: TokenKind,
 }
 
+/// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
+/// included in the output, and a single "Eof" token is always appended to the end of the token list.
+///
+/// # Example
+/// ```rust
+/// let tokens = tokenize_source_string("let x = 5");
+/// println!("{tokens:?");
+/// ```
 pub fn tokenize_source_string(source_string: &str) -> Vec<Token> {
     vec![]
 }
 
+/// This struct indicates the position within a source string at which a specific token is found. By
+/// convention, line and column numbers both start at 1.
 #[derive(Debug, PartialEq)]
 struct SourcePosition {
+    /// The line number.
     line: u64,
+    /// The column number.
     column: u64,
 }
 
+/// This enum represents the different kinds of Nack language tokens.
 #[derive(Debug, Eq, Hash, PartialEq)]
 enum TokenKind {
+    /// A special token type indicating the end of the token stream.
     Eof,
+    /// Identifiers and keywords.
     Identifier,
+    /// Any amount of contiguous whitespace.
     Ignore,
 }
 
+/// Maps token types to regex patterns that match tokens of that type.
 static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
     let mut m = HashMap::new();
 
