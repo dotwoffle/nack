@@ -131,70 +131,58 @@ mod tests {
     fn test_valid_source_strings_are_tokenized_correctly() {
         let eof_value = "".to_owned();
 
-        assert!(
-            tokenize_source_string("")
-                == vec![Token {
-                    position: SourcePosition { line: 1, column: 1 },
-                    value: eof_value.clone(),
-                    kind: TokenKind::Eof
-                }]
-        );
-        assert!(
-            tokenize_source_string("  \n  ")
-                == vec![Token {
-                    position: SourcePosition { line: 2, column: 3 },
-                    value: eof_value.clone(),
-                    kind: TokenKind::Eof
-                }]
-        );
-        assert!(
-            tokenize_source_string("test")
-                == vec![
-                    Token {
-                        position: SourcePosition { line: 1, column: 1 },
-                        value: "test".to_owned(),
-                        kind: TokenKind::Identifier
-                    },
-                    Token {
-                        position: SourcePosition { line: 1, column: 3 },
-                        value: eof_value.clone(),
-                        kind: TokenKind::Eof
-                    }
-                ]
-        );
-        assert!(
-            tokenize_source_string("big_thing split   \n across multiple \n\nlines\n")
-                == vec![
-                    Token {
-                        position: SourcePosition { line: 1, column: 1 },
-                        value: "big_thing".to_owned(),
-                        kind: TokenKind::Identifier
-                    },
-                    Token {
-                        position: SourcePosition {
-                            line: 1,
-                            column: 11
-                        },
-                        value: "split".to_owned(),
-                        kind: TokenKind::Identifier
-                    },
-                    Token {
-                        position: SourcePosition { line: 2, column: 9 },
-                        value: "multiple".to_owned(),
-                        kind: TokenKind::Identifier
-                    },
-                    Token {
-                        position: SourcePosition { line: 4, column: 1 },
-                        value: "lines".to_owned(),
-                        kind: TokenKind::Identifier
-                    },
-                    Token {
-                        position: SourcePosition { line: 5, column: 1 },
-                        value: eof_value.clone(),
-                        kind: TokenKind::Eof
-                    }
-                ]
-        );
+        assert_eq!(tokenize_source_string(""), vec![Token {
+            position: SourcePosition { line: 1, column: 1 },
+            value: eof_value.clone(),
+            kind: TokenKind::Eof
+        }]);
+        assert_eq!(tokenize_source_string("  \n  "), vec![Token {
+            position: SourcePosition { line: 2, column: 3 },
+            value: eof_value.clone(),
+            kind: TokenKind::Eof
+        }]);
+        assert_eq!(tokenize_source_string("test"), vec![
+            Token {
+                position: SourcePosition { line: 1, column: 1 },
+                value: "test".to_owned(),
+                kind: TokenKind::Identifier
+            },
+            Token {
+                position: SourcePosition { line: 1, column: 3 },
+                value: eof_value.clone(),
+                kind: TokenKind::Eof
+            }
+        ]);
+        assert_eq!(tokenize_source_string("big_thing split   \n across multiple \n\nlines\n"), vec![
+            Token {
+                position: SourcePosition { line: 1, column: 1 },
+                value: "big_thing".to_owned(),
+                kind: TokenKind::Identifier
+            },
+            Token {
+                position: SourcePosition {
+                    line: 1,
+                    column: 11
+                },
+                value: "split".to_owned(),
+                kind: TokenKind::Identifier
+            },
+            Token {
+                position: SourcePosition { line: 2, column: 9 },
+                value: "multiple".to_owned(),
+                kind: TokenKind::Identifier
+            },
+            Token {
+                position: SourcePosition { line: 4, column: 1 },
+                value: "lines".to_owned(),
+                kind: TokenKind::Identifier
+            },
+            Token {
+                position: SourcePosition { line: 5, column: 1 },
+                value: eof_value.clone(),
+                kind: TokenKind::Eof
+            }
+        ]);
     }
 
     fn regex_matches_entire_string(pattern: &Regex, string: &str) -> bool {
