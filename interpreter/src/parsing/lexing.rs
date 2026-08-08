@@ -92,7 +92,7 @@ impl SourcePosition {
                 line: self.line + num_newlines as u64,
                 column: (token_value.len()
                     - token_value
-                        .find('\n')
+                        .rfind('\n')
                         .expect("Newline count in extracted token was not 0"))
                     as u64,
             }
@@ -140,7 +140,7 @@ fn find_next_token(source_string: &str) -> Option<(TokenKind, &str)> {
         .filter_map(|(token_type, pattern)| pattern.map(|pattern| (token_type, pattern)))
         .filter(|(_, match_info)| match_info.start() == 0)
         .max_by(|match1, match2| match1.1.len().cmp(&match2.1.len()))
-        .map(|possible_token| (possible_token.0.clone(), possible_token.1.as_str()))
+        .map(|possible_token| (*possible_token.0, possible_token.1.as_str()))
 }
 
 #[cfg(test)]
@@ -236,7 +236,7 @@ mod tests {
                     kind: TokenKind::Identifier
                 },
                 Token {
-                    position: SourcePosition { line: 1, column: 3 },
+                    position: SourcePosition { line: 1, column: 5 },
                     value: eof_value.clone(),
                     kind: TokenKind::Eof
                 }
@@ -256,6 +256,11 @@ mod tests {
                         column: 11
                     },
                     value: "split".to_owned(),
+                    kind: TokenKind::Identifier
+                },
+                Token {
+                    position: SourcePosition { line: 2, column: 2 },
+                    value: "across".to_owned(),
                     kind: TokenKind::Identifier
                 },
                 Token {
