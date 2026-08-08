@@ -284,10 +284,34 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_tokenizing_bad_source_string_returns_syntax_error() {
+        assert_syntax_error_occurs("???", &SourcePosition { line: 1, column: 1 });
+        assert_syntax_error_occurs(
+            "valid stuff until ???",
+            &SourcePosition {
+                line: 1,
+                column: 19,
+            },
+        );
+        assert_syntax_error_occurs(
+            "valid\nlines\nuntil\n???",
+            &SourcePosition { line: 4, column: 1 },
+        );
+    }
+
     /// Checks that a given regex pattern matches an entire given string, not just part of it.
     fn regex_matches_entire_string(pattern: &Regex, string: &str) -> bool {
         pattern
             .find(string)
             .is_some_and(|m| m.start() == 0 && m.end() == string.len())
+    }
+
+    fn assert_syntax_error_occurs(bad_source_string: &str, bad_token_position: &SourcePosition) {
+        let result = match tokenize_source_string(bad_source_string) {
+            Ok(_) => panic!("Expected a syntax error to be returned"),
+            Err(e) => e,
+        };
+        assert_eq!(result.position, *bad_token_position);
     }
 }
