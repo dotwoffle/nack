@@ -14,6 +14,12 @@ pub struct Token {
     kind: TokenKind,
 }
 
+#[derive(Debug)]
+pub struct SyntaxError {
+    position: SourcePosition,
+    message: String,
+}
+
 /// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
 /// included in the output, and a single "Eof" token is always appended to the end of the token list.
 ///
@@ -22,13 +28,42 @@ pub struct Token {
 /// let tokens = tokenize_source_string("let x = 5");
 /// println!("{tokens:?");
 /// ```
-pub fn tokenize_source_string(source_string: &str) -> Vec<Token> {
-    vec![]
+pub fn tokenize_source_string(source_string: &str) -> Result<Vec<Token>, SyntaxError> {
+    let mut tokens = vec![];
+    let mut current_position = SourcePosition { line: 1, column: 1 };
+    let mut current_source_string = source_string;
+
+    while !current_source_string.is_empty() {
+        let (token_kind, token_value) =
+            find_next_token(current_source_string).ok_or(SyntaxError {
+                position: current_position.clone(),
+                message: String::from("No tokens matched here"),
+            })?;
+
+        if token_kind != TokenKind::Ignore {
+            tokens.push(Token {
+                position: current_position.clone(),
+                value: token_value.to_owned(),
+                kind: token_kind,
+            });
+        }
+
+        current_source_string = &current_source_string[token_value.len()..];
+        current_position = current_position.update_from_extracted_token(token_value);
+    }
+
+    tokens.push(Token {
+        position: current_position,
+        value: String::from(""),
+        kind: TokenKind::Eof,
+    });
+
+    Ok(tokens)
 }
 
 /// This struct indicates the position within a source string at which a specific token is found. By
 /// convention, line and column numbers both start at 1.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct SourcePosition {
     /// The line number.
     line: u64,
@@ -36,8 +71,37 @@ struct SourcePosition {
     column: u64,
 }
 
+impl SourcePosition {
+    /// Updates this position by examining a token value extracted from the source string, consuming the old position.
+    ///
+    /// Example
+    /// ```rust
+    /// let pos = SourcePosition {line: 1, column: 1};
+    /// assert_eq!(pos.update_from_extracted_token("test\nhi"), SourcePosition {line: 2, column: 2};
+    /// ```
+    fn update_from_extracted_token(self, token_value: &str) -> SourcePosition {
+        let num_newlines = token_value.chars().filter(|c| *c == '\n').count();
+
+        if num_newlines == 0 {
+            SourcePosition {
+                line: self.line,
+                column: self.column + token_value.len() as u64,
+            }
+        } else {
+            SourcePosition {
+                line: self.line + num_newlines as u64,
+                column: (token_value.len()
+                    - token_value
+                        .find('\n')
+                        .expect("Newline count in extracted token was not 0"))
+                    as u64,
+            }
+        }
+    }
+}
+
 /// This enum represents the different kinds of Nack language tokens.
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum TokenKind {
     /// A special token type indicating the end of the token stream.
     Eof,
@@ -62,6 +126,22 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
 
     m
 });
+
+/// Determines the next token present in the source string, and returns a tuple containing the token type and the token value.
+///
+/// Example
+/// ```rust
+/// assert_eq!(find_next_token("hi"), (TokenKind::Identifier, "hi"));
+/// ```
+fn find_next_token(source_string: &str) -> Option<(TokenKind, &str)> {
+    TOKEN_PATTERNS
+        .iter()
+        .map(|(token_type, pattern)| (token_type, pattern.find(source_string)))
+        .filter_map(|(token_type, pattern)| pattern.map(|pattern| (token_type, pattern)))
+        .filter(|(_, match_info)| match_info.start() == 0)
+        .max_by(|match1, match2| match1.1.len().cmp(&match2.1.len()))
+        .map(|possible_token| (possible_token.0.clone(), possible_token.1.as_str()))
+}
 
 #[cfg(test)]
 mod tests {
@@ -128,63 +208,78 @@ mod tests {
     }
 
     #[test]
-    fn test_valid_source_strings_are_tokenized_correctly() {
+    fn test_valid_source_strings_are_tokenized_correctly() -> Result<(), SyntaxError> {
         let eof_value = "".to_owned();
 
-        assert_eq!(tokenize_source_string(""), vec![Token {
-            position: SourcePosition { line: 1, column: 1 },
-            value: eof_value.clone(),
-            kind: TokenKind::Eof
-        }]);
-        assert_eq!(tokenize_source_string("  \n  "), vec![Token {
-            position: SourcePosition { line: 2, column: 3 },
-            value: eof_value.clone(),
-            kind: TokenKind::Eof
-        }]);
-        assert_eq!(tokenize_source_string("test"), vec![
-            Token {
+        assert_eq!(
+            tokenize_source_string("")?,
+            vec![Token {
                 position: SourcePosition { line: 1, column: 1 },
-                value: "test".to_owned(),
-                kind: TokenKind::Identifier
-            },
-            Token {
-                position: SourcePosition { line: 1, column: 3 },
                 value: eof_value.clone(),
                 kind: TokenKind::Eof
-            }
-        ]);
-        assert_eq!(tokenize_source_string("big_thing split   \n across multiple \n\nlines\n"), vec![
-            Token {
-                position: SourcePosition { line: 1, column: 1 },
-                value: "big_thing".to_owned(),
-                kind: TokenKind::Identifier
-            },
-            Token {
-                position: SourcePosition {
-                    line: 1,
-                    column: 11
+            }]
+        );
+        assert_eq!(
+            tokenize_source_string("  \n  ")?,
+            vec![Token {
+                position: SourcePosition { line: 2, column: 3 },
+                value: eof_value.clone(),
+                kind: TokenKind::Eof
+            }]
+        );
+        assert_eq!(
+            tokenize_source_string("test")?,
+            vec![
+                Token {
+                    position: SourcePosition { line: 1, column: 1 },
+                    value: "test".to_owned(),
+                    kind: TokenKind::Identifier
                 },
-                value: "split".to_owned(),
-                kind: TokenKind::Identifier
-            },
-            Token {
-                position: SourcePosition { line: 2, column: 9 },
-                value: "multiple".to_owned(),
-                kind: TokenKind::Identifier
-            },
-            Token {
-                position: SourcePosition { line: 4, column: 1 },
-                value: "lines".to_owned(),
-                kind: TokenKind::Identifier
-            },
-            Token {
-                position: SourcePosition { line: 5, column: 1 },
-                value: eof_value.clone(),
-                kind: TokenKind::Eof
-            }
-        ]);
+                Token {
+                    position: SourcePosition { line: 1, column: 3 },
+                    value: eof_value.clone(),
+                    kind: TokenKind::Eof
+                }
+            ]
+        );
+        assert_eq!(
+            tokenize_source_string("big_thing split   \n across multiple \n\nlines\n")?,
+            vec![
+                Token {
+                    position: SourcePosition { line: 1, column: 1 },
+                    value: "big_thing".to_owned(),
+                    kind: TokenKind::Identifier
+                },
+                Token {
+                    position: SourcePosition {
+                        line: 1,
+                        column: 11
+                    },
+                    value: "split".to_owned(),
+                    kind: TokenKind::Identifier
+                },
+                Token {
+                    position: SourcePosition { line: 2, column: 9 },
+                    value: "multiple".to_owned(),
+                    kind: TokenKind::Identifier
+                },
+                Token {
+                    position: SourcePosition { line: 4, column: 1 },
+                    value: "lines".to_owned(),
+                    kind: TokenKind::Identifier
+                },
+                Token {
+                    position: SourcePosition { line: 5, column: 1 },
+                    value: eof_value.clone(),
+                    kind: TokenKind::Eof
+                }
+            ]
+        );
+
+        Ok(())
     }
 
+    /// Checks that a given regex pattern matches an entire given string, not just part of it.
     fn regex_matches_entire_string(pattern: &Regex, string: &str) -> bool {
         pattern
             .find(string)
