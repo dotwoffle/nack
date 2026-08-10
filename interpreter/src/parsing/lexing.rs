@@ -2,6 +2,17 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use regex::Regex;
 
+/// This enum represents the different kinds of Nack language tokens.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum TokenKind {
+    /// A special token type indicating the end of the token stream.
+    Eof,
+    /// Identifiers and keywords.
+    Identifier,
+    /// Any amount of contiguous whitespace.
+    Ignore,
+}
+
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
 /// type, a position, and a string value, representing the token as it appeared within the source string.
 #[derive(Debug, PartialEq)]
@@ -14,10 +25,45 @@ pub struct Token {
     kind: TokenKind,
 }
 
+/// This struct represents a syntax error encountered during parsing.
 #[derive(Debug)]
 pub struct SyntaxError {
+    /// The character position in the file at which the syntax error occurred.
     position: SourcePosition,
+    /// A human-readable error message.
     message: String,
+}
+
+/// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way consuming stream.
+pub struct TokenStream {
+    /// The backing list of tokens for this stream.
+    tokens: Vec<Token>,
+}
+
+impl TokenStream {
+    /// Creates a new token stream from the given list of tokens.
+    pub fn new(tokens: Vec<Token>) -> TokenStream {
+        TokenStream { tokens }
+    }
+
+    /// Removes and returns the next token in the stream. If there are no tokens left, an error is returned.
+    pub fn pop(&mut self) -> Result<Token, String> {
+        Err(String::from("No tokens remaining in stream"))
+    }
+
+    /// Checks that the next token in the stream has the specified token type, then pops it. If there are no tokens
+    /// left in the stream, or the next token is not the required type, an error is returned.
+    pub fn require_and_pop(&mut self, required_kind: &TokenKind) -> Result<Token, String> {
+        Err(String::from(""))
+    }
+
+    pub fn peek(&self, lookahead: usize) -> Result<&Token, String> {
+        Err(String::from(""))
+    }
+
+    pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
+        false
+    }
 }
 
 /// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
@@ -92,23 +138,12 @@ impl SourcePosition {
                 line: self.line + num_newlines as u64,
                 column: (token_value.len()
                     - token_value
-                        .rfind('\n')
-                        .expect("Newline count in extracted token was not 0"))
+                    .rfind('\n')
+                    .expect("Newline count in extracted token was not 0"))
                     as u64,
             }
         }
     }
-}
-
-/// This enum represents the different kinds of Nack language tokens.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum TokenKind {
-    /// A special token type indicating the end of the token stream.
-    Eof,
-    /// Identifiers and keywords.
-    Identifier,
-    /// Any amount of contiguous whitespace.
-    Ignore,
 }
 
 /// Maps token types to regex patterns that match tokens of that type.
@@ -144,7 +179,7 @@ fn find_next_token(source_string: &str) -> Option<(TokenKind, &str)> {
 }
 
 #[cfg(test)]
-mod tests {
+mod lexing_tests {
     use super::*;
 
     #[test]
