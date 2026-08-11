@@ -46,23 +46,27 @@ impl TokenStream {
         TokenStream { tokens }
     }
 
-    /// Removes and returns the next token in the stream. If there are no tokens left, an error is returned.
-    pub fn pop(&mut self) -> Result<Token, String> {
-        Err(String::from("No tokens remaining in stream"))
+    /// Removes and returns the next token in the stream. If there are no tokens left, this function panics.
+    pub fn pop(&mut self) -> Token {
+        todo!()
     }
 
-    /// Checks that the next token in the stream has the specified token type, then pops it. If there are no tokens
-    /// left in the stream, or the next token is not the required type, an error is returned.
+    /// Checks that the next token in the stream has the specified token type, then pops it. If the next token does not
+    /// have the required type, an error is returned. If there are no tokens left in the stream, this function panics.
     pub fn require_and_pop(&mut self, required_kind: &TokenKind) -> Result<Token, String> {
-        Err(String::from(""))
+        todo!()
     }
 
-    pub fn peek(&self, lookahead: usize) -> Result<&Token, String> {
-        Err(String::from(""))
+    /// Returns a view of the token in the stream that is `lookahead` positions ahead of the current stream position. If
+    /// there are not enough tokens left in the stream to get the one at the requested position, this function panics.
+    pub fn peek(&self, lookahead: usize) -> &Token {
+        todo!()
     }
 
+    /// Checks if the next token in the stream is any of the given types. If there are no tokens left in the stream,
+    /// this function panics.
     pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
-        false
+        todo!()
     }
 }
 
@@ -138,8 +142,8 @@ impl SourcePosition {
                 line: self.line + num_newlines as u64,
                 column: (token_value.len()
                     - token_value
-                    .rfind('\n')
-                    .expect("Newline count in extracted token was not 0"))
+                        .rfind('\n')
+                        .expect("Newline count in extracted token was not 0"))
                     as u64,
             }
         }
@@ -342,6 +346,7 @@ mod lexing_tests {
             .is_some_and(|m| m.start() == 0 && m.end() == string.len())
     }
 
+    /// Asserts that a syntax error occurs at the given position in the source string.
     fn assert_syntax_error_occurs(bad_source_string: &str, bad_token_position: &SourcePosition) {
         let result = match tokenize_source_string(bad_source_string) {
             Ok(_) => panic!("Expected a syntax error to be returned"),
