@@ -1,8 +1,10 @@
+use crate::interpreting::NackInterpreter;
 use crate::lexing::tokenize_source_string;
 use crate::parsing::NackParser;
 use std::process::ExitCode;
 use std::{env, fs::read_to_string};
 
+pub mod interpreting;
 mod lexing;
 mod parsing;
 
@@ -36,6 +38,10 @@ fn main() -> ExitCode {
     let ast_root = NackParser::new(tokens).parse();
 
     println!("{:?}", ast_root);
+
+    let interpreter = NackInterpreter::new();
+
+    interpreter.interpret_ast(&ast_root);
 
     ExitCode::SUCCESS
 }
