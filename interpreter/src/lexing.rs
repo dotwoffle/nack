@@ -1,6 +1,17 @@
+use regex::Regex;
+use std::collections::VecDeque;
 use std::{collections::HashMap, sync::LazyLock};
 
-use regex::Regex;
+/// This enum represents the different kinds of Nack language tokens.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum TokenKind {
+    /// A special token type indicating the end of the token stream.
+    Eof,
+    /// Identifiers and keywords.
+    Identifier,
+    /// Any amount of contiguous whitespace.
+    Ignore,
+}
 
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
 /// type, a position, and a string value, representing the token as it appeared within the source string.
@@ -14,10 +25,60 @@ pub struct Token {
     kind: TokenKind,
 }
 
+/// This struct represents a syntax error encountered during parsing.
 #[derive(Debug)]
 pub struct SyntaxError {
+    /// The character position in the file at which the syntax error occurred.
     position: SourcePosition,
+    /// A human-readable error message.
     message: String,
+}
+
+/// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way consuming stream.
+pub struct TokenStream {
+    /// The backing list of tokens for this stream.
+    tokens: VecDeque<Token>,
+}
+
+impl TokenStream {
+    /// Creates a new token stream from the given list of tokens.
+    pub fn new(tokens: Vec<Token>) -> TokenStream {
+        TokenStream {
+            tokens: VecDeque::from(tokens),
+        }
+    }
+
+    /// Removes and returns the next token in the stream. If there are no tokens left, this function panics.
+    pub fn pop(&mut self) -> Token {
+        self.tokens
+            .pop_front()
+            .expect("Tried to pop from an empty token stream")
+    }
+
+    /// Checks that the next token in the stream has the specified token type, then pops it. If the next token does not
+    /// have the required type, an error is returned containing the caller-provided error message. If there are no
+    /// tokens left in the stream, this function panics.
+    pub fn require_and_pop(
+        &mut self,
+        required_kind: &TokenKind,
+        error_message: String,
+    ) -> Result<Token, String> {
+        (self.peek(0).kind != *required_kind)
+            .then(|| self.pop())
+            .ok_or(error_message)
+    }
+
+    /// Returns a view of the token in the stream that is `lookahead` positions ahead of the current stream position. If
+    /// there are not enough tokens left in the stream to get the one at the requested position, this function panics.
+    pub fn peek(&self, lookahead: usize) -> &Token {
+        &self.tokens[lookahead]
+    }
+
+    /// Checks if the next token in the stream is any of the given types. If there are no tokens left in the stream,
+    /// this function panics.
+    pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
+        types.contains(&self.peek(0).kind)
+    }
 }
 
 /// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
@@ -92,23 +153,12 @@ impl SourcePosition {
                 line: self.line + num_newlines as u64,
                 column: (token_value.len()
                     - token_value
-                        .rfind('\n')
-                        .expect("Newline count in extracted token was not 0"))
+                    .rfind('\n')
+                    .expect("Newline count in extracted token was not 0"))
                     as u64,
             }
         }
     }
-}
-
-/// This enum represents the different kinds of Nack language tokens.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum TokenKind {
-    /// A special token type indicating the end of the token stream.
-    Eof,
-    /// Identifiers and keywords.
-    Identifier,
-    /// Any amount of contiguous whitespace.
-    Ignore,
 }
 
 /// Maps token types to regex patterns that match tokens of that type.
@@ -144,7 +194,7 @@ fn find_next_token(source_string: &str) -> Option<(TokenKind, &str)> {
 }
 
 #[cfg(test)]
-mod tests {
+mod lexing_tests {
     use super::*;
 
     #[test]
@@ -307,6 +357,7 @@ mod tests {
             .is_some_and(|m| m.start() == 0 && m.end() == string.len())
     }
 
+    /// Asserts that a syntax error occurs at the given position in the source string.
     fn assert_syntax_error_occurs(bad_source_string: &str, bad_token_position: &SourcePosition) {
         let result = match tokenize_source_string(bad_source_string) {
             Ok(_) => panic!("Expected a syntax error to be returned"),
