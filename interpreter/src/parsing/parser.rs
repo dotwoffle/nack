@@ -11,7 +11,9 @@ pub enum ASTNodeType {
 
 /// This struct represents a single node in a Nack AST. Nodes can be either grouping nodes or token nodes.
 pub struct ASTNode {
+    /// The type of node this is.
     pub node_type: ASTNodeType,
+    /// All child nodes of this node.
     pub children: Vec<ASTNode>,
 }
 
