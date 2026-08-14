@@ -2,6 +2,7 @@ use crate::lexing::tokenize_source_string;
 use std::{env, fs::read_to_string};
 
 mod lexing;
+mod parsing;
 
 fn main() -> Result<(), String> {
     let args = env::args().collect::<Vec<String>>();
