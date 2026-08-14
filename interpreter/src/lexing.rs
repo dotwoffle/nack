@@ -29,9 +29,9 @@ pub struct Token {
 #[derive(Debug)]
 pub struct SyntaxError {
     /// The character position in the file at which the syntax error occurred.
-    position: SourcePosition,
+    pub position: SourcePosition,
     /// A human-readable error message.
-    message: String,
+    pub message: String,
 }
 
 /// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way consuming stream.
@@ -81,6 +81,45 @@ impl TokenStream {
     }
 }
 
+/// This struct indicates the position within a source string at which a specific token is found. By
+/// convention, line and column numbers both start at 1.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SourcePosition {
+    /// The line number.
+    pub line: u64,
+    /// The column number.
+    pub column: u64,
+}
+
+impl SourcePosition {
+    /// Updates this position by examining a token value extracted from the source string, consuming the old position.
+    ///
+    /// Example
+    /// ```rust
+    /// let pos = SourcePosition {line: 1, column: 1};
+    /// assert_eq!(pos.update_from_extracted_token("test\nhi"), SourcePosition {line: 2, column: 2};
+    /// ```
+    fn update_from_extracted_token(self, token_value: &str) -> SourcePosition {
+        let num_newlines = token_value.chars().filter(|c| *c == '\n').count();
+
+        if num_newlines == 0 {
+            SourcePosition {
+                line: self.line,
+                column: self.column + token_value.len() as u64,
+            }
+        } else {
+            SourcePosition {
+                line: self.line + num_newlines as u64,
+                column: (token_value.len()
+                    - token_value
+                        .rfind('\n')
+                        .expect("Newline count in extracted token was not 0"))
+                    as u64,
+            }
+        }
+    }
+}
+
 /// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
 /// included in the output, and a single "Eof" token is always appended to the end of the token list.
 ///
@@ -120,45 +159,6 @@ pub fn tokenize_source_string(source_string: &str) -> Result<Vec<Token>, SyntaxE
     });
 
     Ok(tokens)
-}
-
-/// This struct indicates the position within a source string at which a specific token is found. By
-/// convention, line and column numbers both start at 1.
-#[derive(Clone, Debug, PartialEq)]
-struct SourcePosition {
-    /// The line number.
-    line: u64,
-    /// The column number.
-    column: u64,
-}
-
-impl SourcePosition {
-    /// Updates this position by examining a token value extracted from the source string, consuming the old position.
-    ///
-    /// Example
-    /// ```rust
-    /// let pos = SourcePosition {line: 1, column: 1};
-    /// assert_eq!(pos.update_from_extracted_token("test\nhi"), SourcePosition {line: 2, column: 2};
-    /// ```
-    fn update_from_extracted_token(self, token_value: &str) -> SourcePosition {
-        let num_newlines = token_value.chars().filter(|c| *c == '\n').count();
-
-        if num_newlines == 0 {
-            SourcePosition {
-                line: self.line,
-                column: self.column + token_value.len() as u64,
-            }
-        } else {
-            SourcePosition {
-                line: self.line + num_newlines as u64,
-                column: (token_value.len()
-                    - token_value
-                    .rfind('\n')
-                    .expect("Newline count in extracted token was not 0"))
-                    as u64,
-            }
-        }
-    }
 }
 
 /// Maps token types to regex patterns that match tokens of that type.
