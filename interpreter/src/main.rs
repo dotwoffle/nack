@@ -35,5 +35,7 @@ fn main() -> ExitCode {
     };
     let ast_root = NackParser::new(tokens).parse();
 
+    println!("{:?}", ast_root);
+
     ExitCode::SUCCESS
 }

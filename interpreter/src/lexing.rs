@@ -18,11 +18,11 @@ pub enum TokenKind {
 #[derive(Debug, PartialEq)]
 pub struct Token {
     /// The position within the source string where the first character of this token is found.
-    position: SourcePosition,
+    pub position: SourcePosition,
     /// The string value of this token.
-    value: String,
+    pub value: String,
     /// The type of token this is.
-    kind: TokenKind,
+    pub kind: TokenKind,
 }
 
 /// This struct represents a syntax error encountered during parsing.

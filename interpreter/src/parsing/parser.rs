@@ -1,4 +1,5 @@
 use crate::lexing::{Token, TokenStream};
+use std::fmt::{Debug, Formatter};
 
 /// This enum represents the different types of AST nodes as well as the metadata associated with the types.
 pub enum ASTNodeType {
@@ -12,6 +13,29 @@ pub enum ASTNodeType {
 pub struct ASTNode {
     pub node_type: ASTNodeType,
     pub children: Vec<ASTNode>,
+}
+
+impl ASTNode {
+    /// Prints this node's debug string representation, then all of its children indented below it.
+    fn dump(&self, indent: usize, fmt: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            fmt,
+            "{}{}",
+            "  ".repeat(indent),
+            match &self.node_type {
+                ASTNodeType::Grouping(label) => label.clone(),
+                ASTNodeType::Token(token) => format!("{:?} (\"{}\")", token.kind, token.value),
+            }
+        )?;
+        self.dump(indent + 1, fmt)
+    }
+}
+
+impl Debug for ASTNode {
+    /// Dumps the tree to a human-readable string.
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
+        self.dump(0, fmt)
+    }
 }
 
 /// This struct provides a parser used to turn a series of Nack language tokens into an AST.
@@ -30,7 +54,9 @@ pub struct NackParser {
 impl NackParser {
     /// Creates a new parser prepared to parse the given list of tokens.
     pub fn new(tokens: Vec<Token>) -> NackParser {
-        NackParser { tokens: TokenStream::new(tokens) }
+        NackParser {
+            tokens: TokenStream::new(tokens),
+        }
     }
 
     /// Parses the stored token stream and produces an AST. The returned node is the root of the AST.
