@@ -12,6 +12,7 @@ pub enum ASTNodeType {
 }
 
 /// This struct represents a single node in a Nack AST. Nodes can be either grouping nodes or token nodes.
+#[derive(PartialEq)]
 pub struct ASTNode {
     /// The type of node this is.
     pub node_type: ASTNodeType,
@@ -48,12 +49,6 @@ impl ASTNode {
             }
         )?;
         self.dump(indent + 1, fmt)
-    }
-}
-
-impl PartialEq for ASTNode {
-    fn eq(&self, other: &Self) -> bool {
-        self.node_type == other.node_type && self.children == other.children
     }
 }
 
