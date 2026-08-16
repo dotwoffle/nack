@@ -85,7 +85,7 @@ impl TokenStream {
 
 /// This struct indicates the position within a source string at which a specific token is found. By
 /// convention, line and column numbers both start at 1.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SourcePosition {
     /// The line number.
     pub line: u64,

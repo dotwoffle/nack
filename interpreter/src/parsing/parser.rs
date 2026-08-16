@@ -1,4 +1,4 @@
-use crate::lexing::{Token, TokenStream};
+use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents the different types of AST nodes as well as the metadata associated with the types.
@@ -18,6 +18,22 @@ pub struct ASTNode {
 }
 
 impl ASTNode {
+    /// Creates a grouping node with the given label and children.
+    fn of_grouping(label: String, children: Vec<ASTNode>) -> ASTNode {
+        ASTNode {
+            node_type: ASTNodeType::Grouping(label),
+            children,
+        }
+    }
+
+    /// Creates a token node with the given token and children.
+    fn of_token(token: Token, children: Vec<ASTNode>) -> ASTNode {
+        ASTNode {
+            node_type: ASTNodeType::Token(token),
+            children,
+        }
+    }
+
     /// Prints this node's debug string representation, then all of its children indented below it.
     fn dump(&self, indent: usize, fmt: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -62,7 +78,51 @@ impl NackParser {
     }
 
     /// Parses the stored token stream and produces an AST. The returned node is the root of the AST.
-    pub fn parse(self) -> ASTNode {
-        todo!()
+    pub fn parse(mut self) -> Result<ASTNode, SyntaxError> {
+        self.handle_program_rule()
+    }
+
+    fn handle_program_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+        let mut children = vec![];
+
+        while !self.tokens.next_token_has_types(&[TokenKind::Eof]) {
+            children.push(self.handle_program_unit_rule()?);
+        }
+
+        Ok(ASTNode::of_grouping(PROGRAM_LABEL.to_owned(), children))
+    }
+
+    fn handle_program_unit_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+        match self.tokens.peek(0).kind {
+            TokenKind::Identifier | TokenKind::IntLiteral => self.handle_expression_rule(),
+            _ => Err(SyntaxError {
+                position: self.tokens.peek(0).position,
+                message: String::from("Expected an expression here"),
+            }),
+        }
+    }
+
+    fn handle_expression_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+        match self.tokens.peek(0).kind {
+            TokenKind::Identifier | TokenKind::IntLiteral => self.handle_expr_atom_rule(),
+            _ => Err(SyntaxError {
+                position: self.tokens.peek(0).position,
+                message: String::from("Expected an expression here"),
+            }),
+        }
+    }
+
+    fn handle_expr_atom_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+        match self.tokens.peek(0).kind {
+            TokenKind::Identifier | TokenKind::IntLiteral => {
+                Ok(ASTNode::of_token(self.tokens.pop(), vec![]))
+            }
+            _ => Err(SyntaxError {
+                position: self.tokens.peek(0).position,
+                message: String::from("Expected an expression here"),
+            }),
+        }
     }
 }
+
+pub static PROGRAM_LABEL: &str = "PROGRAM";
