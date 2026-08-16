@@ -1,7 +1,9 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
+use std::cmp::PartialEq;
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents the different types of AST nodes as well as the metadata associated with the types.
+#[derive(PartialEq)]
 pub enum ASTNodeType {
     /// A node that represents a logical grouping of other nodes as its children. Grouping nodes have a string label.
     Grouping(String),
@@ -46,6 +48,12 @@ impl ASTNode {
             }
         )?;
         self.dump(indent + 1, fmt)
+    }
+}
+
+impl PartialEq for ASTNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.node_type == other.node_type && self.children == other.children
     }
 }
 
@@ -126,3 +134,63 @@ impl NackParser {
 }
 
 pub static PROGRAM_LABEL: &str = "PROGRAM";
+
+#[cfg(test)]
+mod parser_tests {
+    use super::*;
+    use crate::lexing::SourcePosition;
+
+    #[test]
+    fn test_handle_expr_atom_rule_correctly_parses() -> Result<(), SyntaxError> {
+        assert_eq!(
+            NackParser::new(vec![Token {
+                position: SourcePosition { line: 0, column: 0 },
+                value: String::from("true"),
+                kind: TokenKind::Identifier,
+            }])
+            .handle_expr_atom_rule()?,
+            ASTNode::of_token(
+                Token {
+                    position: SourcePosition { line: 0, column: 0 },
+                    value: String::from("true"),
+                    kind: TokenKind::Identifier,
+                },
+                vec![]
+            )
+        );
+        assert_eq!(
+            NackParser::new(vec![Token {
+                position: SourcePosition { line: 0, column: 0 },
+                value: String::from("123"),
+                kind: TokenKind::IntLiteral,
+            }])
+            .handle_expr_atom_rule()?,
+            ASTNode::of_token(
+                Token {
+                    position: SourcePosition { line: 0, column: 0 },
+                    value: String::from("123"),
+                    kind: TokenKind::IntLiteral,
+                },
+                vec![]
+            )
+        );
+        assert_eq!(
+            NackParser::new(vec![Token {
+                position: SourcePosition { line: 0, column: 0 },
+                value: String::from("foo"),
+                kind: TokenKind::Identifier,
+            }])
+            .handle_expr_atom_rule()?,
+            ASTNode::of_token(
+                Token {
+                    position: SourcePosition { line: 0, column: 0 },
+                    value: String::from("foo"),
+                    kind: TokenKind::Identifier,
+                },
+                vec![]
+            )
+        );
+
+        Ok(())
+    }
+}
