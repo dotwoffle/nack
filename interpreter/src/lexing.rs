@@ -11,6 +11,8 @@ pub enum TokenKind {
     Identifier,
     /// Any amount of contiguous whitespace.
     Ignore,
+    /// An integer literal.
+    IntLiteral,
 }
 
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
@@ -173,6 +175,10 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
         TokenKind::Ignore,
         Regex::new(r"\s+").expect("Failed to compile regex for Ignore"),
     );
+    m.insert(
+        TokenKind::IntLiteral,
+        Regex::new(r"0|([1-9][0-9]*)").expect("Failed to compile regex for IntLiteral"),
+    );
 
     m
 });
@@ -253,6 +259,28 @@ mod lexing_tests {
         assert!(!regex_matches_entire_string(ignore_regex, "foo "));
         assert!(!regex_matches_entire_string(ignore_regex, "foo\n"));
         assert!(!regex_matches_entire_string(ignore_regex, "foo\t"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_int_literal_regex_matches_correct_strings() -> Result<(), &'static str> {
+        let int_literal_regex = TOKEN_PATTERNS
+            .get(&TokenKind::IntLiteral)
+            .ok_or("No pattern defined in TOKEN_PATTERNS for Ignore")?;
+
+        assert!(regex_matches_entire_string(int_literal_regex, "0"));
+        assert!(regex_matches_entire_string(int_literal_regex, "1"));
+        assert!(regex_matches_entire_string(int_literal_regex, "1000000"));
+        assert!(regex_matches_entire_string(int_literal_regex, "12345"));
+        assert!(regex_matches_entire_string(int_literal_regex, "123000"));
+        assert!(regex_matches_entire_string(int_literal_regex, "101010"));
+
+        assert!(!regex_matches_entire_string(int_literal_regex, "00"));
+        assert!(!regex_matches_entire_string(int_literal_regex, "01"));
+        assert!(!regex_matches_entire_string(int_literal_regex, ""));
+        assert!(!regex_matches_entire_string(int_literal_regex, "12.34"));
+        assert!(!regex_matches_entire_string(int_literal_regex, "-1"));
 
         Ok(())
     }
