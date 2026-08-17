@@ -48,7 +48,12 @@ impl ASTNode {
                 ASTNodeType::Token(token) => format!("{:?} (\"{}\")", token.kind, token.value),
             }
         )?;
-        self.dump(indent + 1, fmt)
+
+        for child in &self.children {
+            child.dump(indent + 1, fmt)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -213,7 +218,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expr_atom_rule()?,
+            .handle_expression_rule()?,
             ASTNode::of_grouping(
                 PROGRAM_LABEL.to_owned(),
                 vec![ASTNode::of_token(
