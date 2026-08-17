@@ -73,14 +73,17 @@ pub struct NackParser {
 }
 
 impl NackParser {
-    /// Creates a new parser prepared to parse the given list of tokens.
+    /// Creates a new parser prepared to parse the given list of tokens. The list of tokens cannot
+    /// be empty.
     pub fn new(tokens: Vec<Token>) -> NackParser {
+        assert!(!tokens.is_empty(), "Token stream cannot be empty");
         NackParser {
             tokens: TokenStream::new(tokens),
         }
     }
 
-    /// Parses the stored token stream and produces an AST. The returned node is the root of the AST.
+    /// Parses the stored token stream and produces an AST. The returned node is the root of the
+    /// AST.
     pub fn parse(mut self) -> Result<ASTNode, SyntaxError> {
         self.handle_program_rule()
     }
@@ -187,5 +190,76 @@ mod parser_tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_handle_expr_atom_rule_returns_error_for_malformed_token_stream() {
+        assert!(
+            NackParser::new(vec![Token {
+                position: SourcePosition { line: 0, column: 0 },
+                value: String::new(),
+                kind: TokenKind::Eof
+            }])
+            .handle_expr_atom_rule()
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
+        assert_eq!(
+            NackParser::new(vec![Token {
+                position: SourcePosition { line: 0, column: 0 },
+                value: String::from("foo"),
+                kind: TokenKind::Identifier,
+            }])
+            .handle_expr_atom_rule()?,
+            ASTNode::of_grouping(
+                PROGRAM_LABEL.to_owned(),
+                vec![ASTNode::of_token(
+                    Token {
+                        position: SourcePosition { line: 0, column: 0 },
+                        value: String::from("foo"),
+                        kind: TokenKind::Identifier,
+                    },
+                    vec![]
+                )]
+            )
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_handle_expression_rule_returns_error_for_malformed_token_stream() {
+        assert!(
+            NackParser::new(vec![Token {
+                position: SourcePosition { line: 0, column: 0 },
+                value: String::new(),
+                kind: TokenKind::Eof
+            }])
+            .handle_expression_rule()
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn test_handle_program_unit_rule_correctly_parses() -> Result<(), SyntaxError> {
+        todo!("Program units not well defined yet")
+    }
+
+    #[test]
+    fn test_handle_program_unit_rule_returns_error_for_malformed_token_stream() {
+        todo!("Program units not well defined yet")
+    }
+
+    #[test]
+    fn test_handle_program_rule_correctly_parses() -> Result<(), SyntaxError> {
+        todo!("Program units not well defined yet")
+    }
+
+    #[test]
+    fn test_handle_program_rule_returns_error_for_malformed_token_stream() {
+        todo!("Program units not well defined yet")
     }
 }
