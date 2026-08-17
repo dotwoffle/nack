@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 #[derive(PartialEq)]
 pub enum ASTNodeType {
     /// A node that represents a logical grouping of other nodes as its children. Grouping nodes have a string label.
-    Grouping(String),
+    Grouping(&'static str),
     /// A node that represents a Nack language token.
     Token(Token),
 }
@@ -22,7 +22,7 @@ pub struct ASTNode {
 
 impl ASTNode {
     /// Creates a grouping node with the given label and children.
-    fn of_grouping(label: String, children: Vec<ASTNode>) -> ASTNode {
+    fn of_grouping(label: &'static str, children: Vec<ASTNode>) -> ASTNode {
         ASTNode {
             node_type: ASTNodeType::Grouping(label),
             children,
@@ -44,7 +44,7 @@ impl ASTNode {
             "{}{}",
             "  ".repeat(indent),
             match &self.node_type {
-                ASTNodeType::Grouping(label) => label.clone(),
+                ASTNodeType::Grouping(label) => label.to_string(),
                 ASTNodeType::Token(token) => format!("{:?} (\"{}\")", token.kind, token.value),
             }
         )?;
@@ -100,7 +100,7 @@ impl NackParser {
             children.push(self.handle_program_unit_rule()?);
         }
 
-        Ok(ASTNode::of_grouping(PROGRAM_LABEL.to_owned(), children))
+        Ok(ASTNode::of_grouping(PROGRAM_LABEL, children))
     }
 
     fn handle_program_unit_rule(&mut self) -> Result<ASTNode, SyntaxError> {
@@ -115,7 +115,10 @@ impl NackParser {
 
     fn handle_expression_rule(&mut self) -> Result<ASTNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => self.handle_expr_atom_rule(),
+            TokenKind::Identifier | TokenKind::IntLiteral => Ok(ASTNode::of_grouping(
+                EXPRESSION_LABEL,
+                vec![self.handle_expr_atom_rule()?],
+            )),
             _ => Err(SyntaxError {
                 position: self.tokens.peek(0).position,
                 message: String::from("Expected an expression here"),
@@ -136,6 +139,7 @@ impl NackParser {
     }
 }
 
+pub static EXPRESSION_LABEL: &str = "EXPRESSION";
 pub static PROGRAM_LABEL: &str = "PROGRAM";
 
 #[cfg(test)]
@@ -220,7 +224,7 @@ mod parser_tests {
             }])
             .handle_expression_rule()?,
             ASTNode::of_grouping(
-                PROGRAM_LABEL.to_owned(),
+                EXPRESSION_LABEL,
                 vec![ASTNode::of_token(
                     Token {
                         position: SourcePosition { line: 0, column: 0 },
