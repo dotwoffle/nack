@@ -16,7 +16,8 @@ pub enum TokenKind {
 }
 
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
-/// type, a position, and a string value, representing the token as it appeared within the source string.
+/// type, a position, and a string value, representing the token as it appeared within the source
+/// string.
 #[derive(Debug, PartialEq)]
 pub struct Token {
     /// The position within the source string where the first character of this token is found.
@@ -36,7 +37,8 @@ pub struct SyntaxError {
     pub message: String,
 }
 
-/// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way consuming stream.
+/// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way
+/// consuming stream.
 pub struct TokenStream {
     /// The backing list of tokens for this stream.
     tokens: VecDeque<Token>,
@@ -50,16 +52,18 @@ impl TokenStream {
         }
     }
 
-    /// Removes and returns the next token in the stream. If there are no tokens left, this function panics.
+    /// Removes and returns the next token in the stream. If there are no tokens left, this function
+    /// panics.
     pub fn pop(&mut self) -> Token {
         self.tokens
             .pop_front()
             .expect("Tried to pop from an empty token stream")
     }
 
-    /// Checks that the next token in the stream has the specified token type, then pops it. If the next token does not
-    /// have the required type, an error is returned containing the caller-provided error message. If there are no
-    /// tokens left in the stream, this function panics.
+    /// Checks that the next token in the stream has the specified token type, then pops it. If the
+    /// next token does not have the required type, an error is returned containing the
+    /// caller-provided error message. If there are no tokens left in the stream, this function
+    /// panics.
     pub fn require_and_pop(
         &mut self,
         required_kind: &TokenKind,
@@ -70,13 +74,15 @@ impl TokenStream {
             .ok_or(error_message)
     }
 
-    /// Returns a view of the token in the stream that is `lookahead` positions ahead of the current stream position. If
-    /// there are not enough tokens left in the stream to get the one at the requested position, this function panics.
+    /// Returns a view of the token in the stream that is `lookahead` positions ahead of the current
+    /// stream position. If there are not enough tokens left in the stream to get the one at the
+    /// requested position, this function panics.
     pub fn peek(&self, lookahead: usize) -> &Token {
         &self.tokens[lookahead]
     }
 
-    /// Checks if the next token in the stream is any of the given types. If there are no tokens left in the stream,
+    /// Checks if the next token in the stream is any of the given types. If there are no tokens
+    /// left in the stream,
     /// this function panics.
     pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
         types.contains(&self.peek(0).kind)
@@ -94,7 +100,8 @@ pub struct SourcePosition {
 }
 
 impl SourcePosition {
-    /// Updates this position by examining a token value extracted from the source string, consuming the old position.
+    /// Updates this position by examining a token value extracted from the source string, consuming
+    /// the old position.
     ///
     /// Example
     /// ```rust
@@ -123,7 +130,8 @@ impl SourcePosition {
 }
 
 /// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
-/// included in the output, and a single "Eof" token is always appended to the end of the token list.
+/// included in the output, and a single "Eof" token is always appended to the end of the token
+/// list.
 ///
 /// # Example
 /// ```rust
@@ -183,7 +191,8 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
     m
 });
 
-/// Determines the next token present in the source string, and returns a tuple containing the token type and the token value.
+/// Determines the next token present in the source string, and returns a tuple containing the token
+/// type and the token value.
 ///
 /// Example
 /// ```rust

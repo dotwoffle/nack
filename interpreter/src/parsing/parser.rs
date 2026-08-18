@@ -1,17 +1,21 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
+use crate::parsing::{EXPRESSION_LABEL, PROGRAM_LABEL};
 use std::cmp::PartialEq;
 use std::fmt::{Debug, Formatter};
 
-/// This enum represents the different types of AST nodes as well as the metadata associated with the types.
+/// This enum represents the different types of AST nodes as well as the metadata associated with
+/// the types.
 #[derive(PartialEq)]
 pub enum ASTNodeType {
-    /// A node that represents a logical grouping of other nodes as its children. Grouping nodes have a string label.
+    /// A node that represents a logical grouping of other nodes as its children. Grouping nodes
+    /// have a string label.
     Grouping(&'static str),
     /// A node that represents a Nack language token.
     Token(Token),
 }
 
-/// This struct represents a single node in a Nack AST. Nodes can be either grouping nodes or token nodes.
+/// This struct represents a single node in a Nack AST. Nodes can be either grouping nodes or token
+/// nodes.
 #[derive(PartialEq)]
 pub struct ASTNode {
     /// The type of node this is.
@@ -138,9 +142,6 @@ impl NackParser {
         }
     }
 }
-
-pub static EXPRESSION_LABEL: &str = "EXPRESSION";
-pub static PROGRAM_LABEL: &str = "PROGRAM";
 
 #[cfg(test)]
 mod parser_tests {

@@ -10,7 +10,12 @@ impl NackInterpreter {
     }
 
     /// Interprets and executes the given program AST.
-    pub fn interpret_ast(self, ast: &ASTNode) {
-        todo!()
+    pub fn interpret_ast(self, ast: &ASTNode) -> Result<(), InterpreterError> {
+        Ok(())
     }
+}
+
+pub enum InterpreterError {
+    Internal,
+    Runtime,
 }
