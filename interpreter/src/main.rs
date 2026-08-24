@@ -1,6 +1,6 @@
 use crate::interpreting::NackInterpreter;
 use crate::lexing::tokenize_source_string;
-use crate::parsing::NackParser;
+use crate::parsing::parser::NackParser;
 use std::process::ExitCode;
 use std::{env, fs::read_to_string};
 
