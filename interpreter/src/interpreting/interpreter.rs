@@ -1,6 +1,7 @@
+use crate::interpreting::values::{CoreNackValue, NackValue};
 use crate::lexing::TokenKind;
-use crate::parsing::EXPRESSION_LABEL;
 use crate::parsing::parser::{ASTNode, ASTNodeType};
+use crate::parsing::{EXPRESSION_LABEL, FALSE_KEYWORD, TRUE_KEYWORD};
 
 /// This struct provides an interpreter for Nack ASTs.
 pub struct NackInterpreter {}
@@ -34,7 +35,10 @@ impl NackInterpreter {
         }
     }
 
-    fn evaluate_expression(&mut self, expression_node: &ASTNode) -> Result<(), InterpreterError> {
+    fn evaluate_expression(
+        &mut self,
+        expression_node: &ASTNode,
+    ) -> Result<NackValue, InterpreterError> {
         let actual_root_node = match &expression_node.node_type {
             ASTNodeType::Grouping(label) if *label == EXPRESSION_LABEL => {
                 &expression_node.children[0]
@@ -45,8 +49,16 @@ impl NackInterpreter {
         match &actual_root_node.node_type {
             ASTNodeType::Grouping(label) => todo!(),
             ASTNodeType::Token(token) => match token.kind {
-                TokenKind::IntLiteral => todo!(),
-                TokenKind::Identifier => todo!(),
+                TokenKind::IntLiteral => Ok(NackValue {
+                    value_type: String::from("Int"),
+                    value: CoreNackValue::Int(token.value.parse().map_err(|e| {
+                        InterpreterError::Internal(format!(
+                            "Failed to parse {} into int: {e}",
+                            token.value
+                        ))
+                    })?),
+                }),
+                TokenKind::Identifier => Ok(if token.value == TRUE_KEYWORD || token.value == FALSE_KEYWORD {} else { todo!() }),
                 _ => Err(InterpreterError::Internal(format!(
                     "Invalid expression node: {}",
                     token.value
