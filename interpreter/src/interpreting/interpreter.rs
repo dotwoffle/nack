@@ -26,7 +26,13 @@ impl NackInterpreter {
         program_unit_node: &ASTNode,
     ) -> Result<(), InterpreterError> {
         if let ASTNodeType::Grouping(label) = program_unit_node.node_type {
-            Ok(())
+            match label {
+                EXPRESSION_LABEL => {
+                    println!("{:?}", self.evaluate_expression(program_unit_node)?.value);
+                    Ok(())
+                }
+                &_ => todo!(),
+            }
         } else {
             Err(InterpreterError::Internal(format!(
                 "{:?} is not a valid node type for program units",
@@ -58,7 +64,16 @@ impl NackInterpreter {
                         ))
                     })?),
                 }),
-                TokenKind::Identifier => Ok(if token.value == TRUE_KEYWORD || token.value == FALSE_KEYWORD {} else { todo!() }),
+                TokenKind::Identifier => {
+                    if token.value == TRUE_KEYWORD || token.value == FALSE_KEYWORD {
+                        Ok(NackValue {
+                            value_type: String::from("Bool"),
+                            value: CoreNackValue::Bool(token.value == TRUE_KEYWORD),
+                        })
+                    } else {
+                        todo!()
+                    }
+                }
                 _ => Err(InterpreterError::Internal(format!(
                     "Invalid expression node: {}",
                     token.value

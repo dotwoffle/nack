@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum CoreNackValue {
     Int(i64),
     Bool(bool),
