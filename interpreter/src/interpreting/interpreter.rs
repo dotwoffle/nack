@@ -21,6 +21,7 @@ impl NackInterpreter {
         Ok(())
     }
 
+    /// Evaluates a single program unit node.
     fn evaluate_program_unit_node(
         &mut self,
         program_unit_node: &ASTNode,
@@ -34,10 +35,10 @@ impl NackInterpreter {
                 &_ => todo!(),
             }
         } else {
-            Err(InterpreterError::Internal(format!(
+            panic!(
                 "{:?} is not a valid node type for program units",
                 program_unit_node.node_type
-            )))
+            )
         }
     }
 
@@ -57,12 +58,9 @@ impl NackInterpreter {
             ASTNodeType::Token(token) => match token.kind {
                 TokenKind::IntLiteral => Ok(NackValue {
                     value_type: String::from("Int"),
-                    value: CoreNackValue::Int(token.value.parse().map_err(|e| {
-                        InterpreterError::Internal(format!(
-                            "Failed to parse {} into int: {e}",
-                            token.value
-                        ))
-                    })?),
+                    value: CoreNackValue::Int(token.value.parse().unwrap_or_else(|e| {
+                        panic!("Failed to parse {} into int: {e}", token.value)
+                    })),
                 }),
                 TokenKind::Identifier => {
                     if token.value == TRUE_KEYWORD || token.value == FALSE_KEYWORD {
@@ -74,16 +72,12 @@ impl NackInterpreter {
                         todo!()
                     }
                 }
-                _ => Err(InterpreterError::Internal(format!(
-                    "Invalid expression node: {}",
-                    token.value
-                ))),
+                _ => panic!("Invalid expression node: {}", token.value),
             },
         }
     }
 }
 
 pub enum InterpreterError {
-    Internal(String),
     Runtime,
 }
