@@ -1,11 +1,12 @@
 use crate::lexing::{Token, TokenKind};
 
+#[derive(Debug)]
 pub enum ProgramUnitNode {
     Expression(ExpressionNode),
 }
 
+#[derive(Debug)]
 pub enum ExpressionSubtreeRootNode {
-    SubExpression(Box<ExpressionNode>),
     IntLiteral(IntLiteralNode),
     BoolLiteral(BoolLiteralNode),
 }
@@ -15,20 +16,16 @@ pub struct NackProgramAST {
     pub program_units: Vec<ProgramUnitNode>,
 }
 
+#[derive(Debug)]
 pub struct ExpressionNode {
-    subtree_node: ExpressionSubtreeRootNode,
-}
-
-impl ExpressionNode {
-    pub fn new(subtree_node: ExpressionSubtreeRootNode) -> Self {
-        ExpressionNode { subtree_node }
-    }
+    pub subtree_node: ExpressionSubtreeRootNode,
 }
 
 macro_rules! declare_literal_node {
     ($name:ident, $kind:pat) => {
+        #[derive(Debug)]
         pub struct $name {
-            token: Token,
+            pub token: Token,
         }
 
         impl TryFrom<Token> for $name {
