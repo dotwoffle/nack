@@ -1,8 +1,8 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
-    ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
+    BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IntLiteralNode, NackProgramAST,
+    ProgramUnitNode,
 };
-use crate::parsing::{EXPRESSION_LABEL, PROGRAM_LABEL};
 use std::cmp::PartialEq;
 use std::fmt::{Debug, Formatter};
 
@@ -114,7 +114,9 @@ impl NackParser {
     /// Parses the PROGRAM_UNIT language rule and returns the root of the produced subtree.
     fn handle_program_unit_rule(&mut self) -> Result<ProgramUnitNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => self.handle_expression_rule(),
+            TokenKind::Identifier | TokenKind::IntLiteral => self
+                .handle_expression_rule()
+                .map(ProgramUnitNode::Expression),
             _ => Err(SyntaxError {
                 position: self.tokens.peek(0).position,
                 message: String::from("Expected an expression here"),
@@ -125,10 +127,9 @@ impl NackParser {
     /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
     fn handle_expression_rule(&mut self) -> Result<ExpressionNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => Ok(ASTNode::of_grouping(
-                EXPRESSION_LABEL,
-                vec![self.handle_expr_atom_rule()?],
-            )),
+            TokenKind::Identifier | TokenKind::IntLiteral => {
+                self.handle_expr_atom_rule().map(ExpressionNode::new)
+            }
             _ => Err(SyntaxError {
                 position: self.tokens.peek(0).position,
                 message: String::from("Expected an expression here"),
@@ -139,9 +140,12 @@ impl NackParser {
     /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
     fn handle_expr_atom_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => {
-                Ok(ASTNode::of_token(self.tokens.pop(), vec![]))
-            }
+            TokenKind::Identifier => Ok(ExpressionSubtreeRootNode::BoolLiteral(
+                BoolLiteralNode::try_from(self.tokens.pop()).unwrap_or_else(|e| panic!("{e}")),
+            )),
+            TokenKind::IntLiteral => Ok(ExpressionSubtreeRootNode::IntLiteral(
+                IntLiteralNode::try_from(self.tokens.pop()).unwrap_or_else(|e| panic!("{e}")),
+            )),
             _ => Err(SyntaxError {
                 position: self.tokens.peek(0).position,
                 message: String::from("Expected an expression here"),
@@ -163,7 +167,7 @@ mod parser_tests {
                 value: String::from("true"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expr_atom_rule()?,
+                .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -179,7 +183,7 @@ mod parser_tests {
                 value: String::from("123"),
                 kind: TokenKind::IntLiteral,
             }])
-            .handle_expr_atom_rule()?,
+                .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -195,7 +199,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expr_atom_rule()?,
+                .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -217,8 +221,8 @@ mod parser_tests {
                 value: String::new(),
                 kind: TokenKind::Eof
             }])
-            .handle_expr_atom_rule()
-            .is_err()
+                .handle_expr_atom_rule()
+                .is_err()
         );
     }
 
@@ -230,7 +234,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expression_rule()?,
+                .handle_expression_rule()?,
             ASTNode::of_grouping(
                 EXPRESSION_LABEL,
                 vec![ASTNode::of_token(
@@ -255,8 +259,8 @@ mod parser_tests {
                 value: String::new(),
                 kind: TokenKind::Eof
             }])
-            .handle_expression_rule()
-            .is_err()
+                .handle_expression_rule()
+                .is_err()
         );
     }
 
