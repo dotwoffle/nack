@@ -97,6 +97,7 @@ impl NackParser {
         self.handle_program_rule()
     }
 
+    /// Parses the PROGRAM language rule and returns the root of the produced subtree.
     fn handle_program_rule(&mut self) -> Result<ASTNode, SyntaxError> {
         let mut children = vec![];
 
@@ -107,6 +108,7 @@ impl NackParser {
         Ok(ASTNode::of_grouping(PROGRAM_LABEL, children))
     }
 
+    /// Parses the PROGRAM_UNIT language rule and returns the root of the produced subtree.
     fn handle_program_unit_rule(&mut self) -> Result<ASTNode, SyntaxError> {
         match self.tokens.peek(0).kind {
             TokenKind::Identifier | TokenKind::IntLiteral => self.handle_expression_rule(),
@@ -117,6 +119,7 @@ impl NackParser {
         }
     }
 
+    /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
     fn handle_expression_rule(&mut self) -> Result<ASTNode, SyntaxError> {
         match self.tokens.peek(0).kind {
             TokenKind::Identifier | TokenKind::IntLiteral => Ok(ASTNode::of_grouping(
@@ -130,6 +133,7 @@ impl NackParser {
         }
     }
 
+    /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
     fn handle_expr_atom_rule(&mut self) -> Result<ASTNode, SyntaxError> {
         match self.tokens.peek(0).kind {
             TokenKind::Identifier | TokenKind::IntLiteral => {
@@ -156,7 +160,7 @@ mod parser_tests {
                 value: String::from("true"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expr_atom_rule()?,
+                .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -172,7 +176,7 @@ mod parser_tests {
                 value: String::from("123"),
                 kind: TokenKind::IntLiteral,
             }])
-            .handle_expr_atom_rule()?,
+                .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -188,7 +192,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expr_atom_rule()?,
+                .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -210,8 +214,8 @@ mod parser_tests {
                 value: String::new(),
                 kind: TokenKind::Eof
             }])
-            .handle_expr_atom_rule()
-            .is_err()
+                .handle_expr_atom_rule()
+                .is_err()
         );
     }
 
@@ -223,7 +227,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-            .handle_expression_rule()?,
+                .handle_expression_rule()?,
             ASTNode::of_grouping(
                 EXPRESSION_LABEL,
                 vec![ASTNode::of_token(
@@ -248,8 +252,8 @@ mod parser_tests {
                 value: String::new(),
                 kind: TokenKind::Eof
             }])
-            .handle_expression_rule()
-            .is_err()
+                .handle_expression_rule()
+                .is_err()
         );
     }
 
