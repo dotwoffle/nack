@@ -1,4 +1,7 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
+use crate::parsing::ast::{
+    ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
+};
 use crate::parsing::{EXPRESSION_LABEL, PROGRAM_LABEL};
 use std::cmp::PartialEq;
 use std::fmt::{Debug, Formatter};
@@ -93,23 +96,23 @@ impl NackParser {
 
     /// Parses the stored token stream and produces an AST. The returned node is the root of the
     /// AST.
-    pub fn parse(mut self) -> Result<ASTNode, SyntaxError> {
+    pub fn parse(mut self) -> Result<NackProgramAST, SyntaxError> {
         self.handle_program_rule()
     }
 
     /// Parses the PROGRAM language rule and returns the root of the produced subtree.
-    fn handle_program_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+    fn handle_program_rule(&mut self) -> Result<NackProgramAST, SyntaxError> {
         let mut children = vec![];
 
         while !self.tokens.next_token_has_types(&[TokenKind::Eof]) {
             children.push(self.handle_program_unit_rule()?);
         }
 
-        Ok(ASTNode::of_grouping(PROGRAM_LABEL, children))
+        Ok(NackProgramAST::new(children))
     }
 
     /// Parses the PROGRAM_UNIT language rule and returns the root of the produced subtree.
-    fn handle_program_unit_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+    fn handle_program_unit_rule(&mut self) -> Result<ProgramUnitNode, SyntaxError> {
         match self.tokens.peek(0).kind {
             TokenKind::Identifier | TokenKind::IntLiteral => self.handle_expression_rule(),
             _ => Err(SyntaxError {
@@ -120,7 +123,7 @@ impl NackParser {
     }
 
     /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
-    fn handle_expression_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+    fn handle_expression_rule(&mut self) -> Result<ExpressionNode, SyntaxError> {
         match self.tokens.peek(0).kind {
             TokenKind::Identifier | TokenKind::IntLiteral => Ok(ASTNode::of_grouping(
                 EXPRESSION_LABEL,
@@ -134,7 +137,7 @@ impl NackParser {
     }
 
     /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
-    fn handle_expr_atom_rule(&mut self) -> Result<ASTNode, SyntaxError> {
+    fn handle_expr_atom_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
         match self.tokens.peek(0).kind {
             TokenKind::Identifier | TokenKind::IntLiteral => {
                 Ok(ASTNode::of_token(self.tokens.pop(), vec![]))
