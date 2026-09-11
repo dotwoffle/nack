@@ -160,7 +160,7 @@ mod parser_tests {
                 value: String::from("true"),
                 kind: TokenKind::Identifier,
             }])
-                .handle_expr_atom_rule()?,
+            .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -176,7 +176,7 @@ mod parser_tests {
                 value: String::from("123"),
                 kind: TokenKind::IntLiteral,
             }])
-                .handle_expr_atom_rule()?,
+            .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -192,7 +192,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-                .handle_expr_atom_rule()?,
+            .handle_expr_atom_rule()?,
             ASTNode::of_token(
                 Token {
                     position: SourcePosition { line: 0, column: 0 },
@@ -214,8 +214,8 @@ mod parser_tests {
                 value: String::new(),
                 kind: TokenKind::Eof
             }])
-                .handle_expr_atom_rule()
-                .is_err()
+            .handle_expr_atom_rule()
+            .is_err()
         );
     }
 
@@ -227,7 +227,7 @@ mod parser_tests {
                 value: String::from("foo"),
                 kind: TokenKind::Identifier,
             }])
-                .handle_expression_rule()?,
+            .handle_expression_rule()?,
             ASTNode::of_grouping(
                 EXPRESSION_LABEL,
                 vec![ASTNode::of_token(
@@ -252,8 +252,8 @@ mod parser_tests {
                 value: String::new(),
                 kind: TokenKind::Eof
             }])
-                .handle_expression_rule()
-                .is_err()
+            .handle_expression_rule()
+            .is_err()
         );
     }
 
