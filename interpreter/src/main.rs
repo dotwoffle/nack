@@ -1,6 +1,6 @@
 use crate::interpreting::NackInterpreter;
 use crate::lexing::tokenize_source_string;
-use crate::parsing::NackParser;
+use crate::parsing::parser::NackParser;
 use std::process::ExitCode;
 use std::{env, fs::read_to_string};
 
@@ -35,7 +35,16 @@ fn main() -> ExitCode {
             return ExitCode::from(3);
         }
     };
-    let ast_root = NackParser::new(tokens).parse();
+    let ast_root = match NackParser::new(tokens).parse() {
+        Ok(ast_root) => ast_root,
+        Err(e) => {
+            println!(
+                "Syntax error at ({},{}): {}",
+                e.position.line, e.position.column, e.message
+            );
+            return ExitCode::from(3);
+        }
+    };
 
     println!("{:?}", ast_root);
 

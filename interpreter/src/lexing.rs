@@ -11,10 +11,13 @@ pub enum TokenKind {
     Identifier,
     /// Any amount of contiguous whitespace.
     Ignore,
+    /// An integer literal.
+    IntLiteral,
 }
 
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
-/// type, a position, and a string value, representing the token as it appeared within the source string.
+/// type, a position, and a string value, representing the token as it appeared within the source
+/// string.
 #[derive(Debug, PartialEq)]
 pub struct Token {
     /// The position within the source string where the first character of this token is found.
@@ -34,7 +37,8 @@ pub struct SyntaxError {
     pub message: String,
 }
 
-/// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way consuming stream.
+/// This struct provides a wrapper around a list of Nack language tokens, turning it into a one-way
+/// consuming stream.
 pub struct TokenStream {
     /// The backing list of tokens for this stream.
     tokens: VecDeque<Token>,
@@ -48,16 +52,18 @@ impl TokenStream {
         }
     }
 
-    /// Removes and returns the next token in the stream. If there are no tokens left, this function panics.
+    /// Removes and returns the next token in the stream. If there are no tokens left, this function
+    /// panics.
     pub fn pop(&mut self) -> Token {
         self.tokens
             .pop_front()
             .expect("Tried to pop from an empty token stream")
     }
 
-    /// Checks that the next token in the stream has the specified token type, then pops it. If the next token does not
-    /// have the required type, an error is returned containing the caller-provided error message. If there are no
-    /// tokens left in the stream, this function panics.
+    /// Checks that the next token in the stream has the specified token type, then pops it. If the
+    /// next token does not have the required type, an error is returned containing the
+    /// caller-provided error message. If there are no tokens left in the stream, this function
+    /// panics.
     pub fn require_and_pop(
         &mut self,
         required_kind: &TokenKind,
@@ -68,13 +74,15 @@ impl TokenStream {
             .ok_or(error_message)
     }
 
-    /// Returns a view of the token in the stream that is `lookahead` positions ahead of the current stream position. If
-    /// there are not enough tokens left in the stream to get the one at the requested position, this function panics.
+    /// Returns a view of the token in the stream that is `lookahead` positions ahead of the current
+    /// stream position. If there are not enough tokens left in the stream to get the one at the
+    /// requested position, this function panics.
     pub fn peek(&self, lookahead: usize) -> &Token {
         &self.tokens[lookahead]
     }
 
-    /// Checks if the next token in the stream is any of the given types. If there are no tokens left in the stream,
+    /// Checks if the next token in the stream is any of the given types. If there are no tokens
+    /// left in the stream,
     /// this function panics.
     pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
         types.contains(&self.peek(0).kind)
@@ -83,7 +91,7 @@ impl TokenStream {
 
 /// This struct indicates the position within a source string at which a specific token is found. By
 /// convention, line and column numbers both start at 1.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SourcePosition {
     /// The line number.
     pub line: u64,
@@ -92,7 +100,8 @@ pub struct SourcePosition {
 }
 
 impl SourcePosition {
-    /// Updates this position by examining a token value extracted from the source string, consuming the old position.
+    /// Updates this position by examining a token value extracted from the source string, consuming
+    /// the old position.
     ///
     /// Example
     /// ```rust
@@ -121,7 +130,8 @@ impl SourcePosition {
 }
 
 /// Turns a source string into a series of Nack language tokens. Tokens with type "Ignore" are not
-/// included in the output, and a single "Eof" token is always appended to the end of the token list.
+/// included in the output, and a single "Eof" token is always appended to the end of the token
+/// list.
 ///
 /// # Example
 /// ```rust
@@ -173,11 +183,16 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
         TokenKind::Ignore,
         Regex::new(r"\s+").expect("Failed to compile regex for Ignore"),
     );
+    m.insert(
+        TokenKind::IntLiteral,
+        Regex::new(r"0|([1-9][0-9]*)").expect("Failed to compile regex for IntLiteral"),
+    );
 
     m
 });
 
-/// Determines the next token present in the source string, and returns a tuple containing the token type and the token value.
+/// Determines the next token present in the source string, and returns a tuple containing the token
+/// type and the token value.
 ///
 /// Example
 /// ```rust
@@ -253,6 +268,28 @@ mod lexing_tests {
         assert!(!regex_matches_entire_string(ignore_regex, "foo "));
         assert!(!regex_matches_entire_string(ignore_regex, "foo\n"));
         assert!(!regex_matches_entire_string(ignore_regex, "foo\t"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_int_literal_regex_matches_correct_strings() -> Result<(), &'static str> {
+        let int_literal_regex = TOKEN_PATTERNS
+            .get(&TokenKind::IntLiteral)
+            .ok_or("No pattern defined in TOKEN_PATTERNS for Ignore")?;
+
+        assert!(regex_matches_entire_string(int_literal_regex, "0"));
+        assert!(regex_matches_entire_string(int_literal_regex, "1"));
+        assert!(regex_matches_entire_string(int_literal_regex, "1000000"));
+        assert!(regex_matches_entire_string(int_literal_regex, "12345"));
+        assert!(regex_matches_entire_string(int_literal_regex, "123000"));
+        assert!(regex_matches_entire_string(int_literal_regex, "101010"));
+
+        assert!(!regex_matches_entire_string(int_literal_regex, "00"));
+        assert!(!regex_matches_entire_string(int_literal_regex, "01"));
+        assert!(!regex_matches_entire_string(int_literal_regex, ""));
+        assert!(!regex_matches_entire_string(int_literal_regex, "12.34"));
+        assert!(!regex_matches_entire_string(int_literal_regex, "-1"));
 
         Ok(())
     }
