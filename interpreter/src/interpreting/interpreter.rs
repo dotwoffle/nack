@@ -21,7 +21,8 @@ impl NackInterpreter {
         Ok(())
     }
 
-    /// Evaluates a single program unit node.
+    /// Evaluates a subtree with a `PROGRAM_UNIT` node at the root. If the root node is not a
+    /// `PROGRAM_UNIT` node, or an error occurs during interpreting, an error is returned.
     fn evaluate_program_unit_node(
         &mut self,
         program_unit_node: &ASTNode,
@@ -42,6 +43,9 @@ impl NackInterpreter {
         }
     }
 
+    /// Evaluates an expression subtree to produce a Nack value, including trees with an
+    /// `EXPRESSION` root node. An error is returned if the interpreter encounters an error during
+    /// evaluation.
     fn evaluate_expression(
         &mut self,
         expression_node: &ASTNode,
@@ -78,8 +82,10 @@ impl NackInterpreter {
     }
 }
 
+/// This enum represents an error encountered during interpreting.
 #[derive(Debug, PartialEq)]
 pub enum InterpreterError {
+    /// An error encountered during runtime.
     Runtime,
 }
 
