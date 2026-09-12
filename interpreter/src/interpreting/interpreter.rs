@@ -45,8 +45,11 @@ impl NackInterpreter {
     ) -> Result<NackValue, InterpreterError> {
         match &expression_node.subtree_node {
             ExpressionSubtreeRootNode::IntLiteral(literal_node) => {
-                let value = literal_node.token.value.parse().unwrap_or_else(|e| {
-                    panic!("Failed to parse {} into int: {e}", literal_node.token.value)
+                let value = literal_node.token().value.parse().unwrap_or_else(|e| {
+                    panic!(
+                        "Failed to parse {} into int: {e}",
+                        literal_node.token().value
+                    )
                 });
                 Ok(NackValue {
                     value_type: String::from("Int"),
@@ -54,17 +57,18 @@ impl NackInterpreter {
                 })
             }
             ExpressionSubtreeRootNode::BoolLiteral(literal_node) => {
-                if literal_node.token.value == TRUE_KEYWORD
-                    || literal_node.token.value == FALSE_KEYWORD
+                if literal_node.token().value == TRUE_KEYWORD
+                    || literal_node.token().value == FALSE_KEYWORD
                 {
                     Ok(NackValue {
                         value_type: String::from("Bool"),
-                        value: CoreNackValue::Bool(literal_node.token.value == TRUE_KEYWORD),
+                        value: CoreNackValue::Bool(literal_node.token().value == TRUE_KEYWORD),
                     })
                 } else {
                     todo!()
                 }
             }
+            _ => todo!(),
         }
     }
 }
@@ -80,18 +84,20 @@ pub enum InterpreterError {
 mod expression_tests {
     use super::*;
     use crate::lexing::{SourcePosition, Token, TokenKind};
-    use crate::parsing::parser::{ASTNode, ASTNodeType};
+    use crate::parsing::ast::{BoolLiteralNode, IntLiteralNode};
 
     #[test]
     fn test_interpreting_expr_atoms_returns_correct_values() {
         assert_eq!(
-            NackInterpreter::new().evaluate_expression_tree(&ASTNode {
-                node_type: ASTNodeType::Token(Token {
-                    position: SourcePosition { line: 0, column: 0 },
-                    value: String::from("123"),
-                    kind: TokenKind::IntLiteral,
-                }),
-                children: vec![],
+            NackInterpreter::new().evaluate_expression_tree(&ExpressionNode {
+                subtree_node: ExpressionSubtreeRootNode::IntLiteral(
+                    IntLiteralNode::try_from(Token {
+                        position: SourcePosition { line: 0, column: 0 },
+                        value: String::from("123"),
+                        kind: TokenKind::IntLiteral,
+                    })
+                    .unwrap_or_else(|e| panic!("{e}"))
+                )
             }),
             Ok(NackValue {
                 value_type: String::from("Int"),
@@ -99,13 +105,15 @@ mod expression_tests {
             })
         );
         assert_eq!(
-            NackInterpreter::new().evaluate_expression_tree(&ASTNode {
-                node_type: ASTNodeType::Token(Token {
-                    position: SourcePosition { line: 0, column: 0 },
-                    value: String::from("true"),
-                    kind: TokenKind::Identifier,
-                }),
-                children: vec![],
+            NackInterpreter::new().evaluate_expression_tree(&ExpressionNode {
+                subtree_node: ExpressionSubtreeRootNode::BoolLiteral(
+                    BoolLiteralNode::try_from(Token {
+                        position: SourcePosition { line: 0, column: 0 },
+                        value: String::from("true"),
+                        kind: TokenKind::Identifier,
+                    })
+                    .unwrap_or_else(|e| panic!("{e}"))
+                )
             }),
             Ok(NackValue {
                 value_type: String::from("Bool"),
