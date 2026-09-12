@@ -1,8 +1,9 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
-    BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IntLiteralNode, NackProgramAST,
-    ProgramUnitNode,
+    BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IdentifierNode, IntLiteralNode,
+    NackProgramAST, ProgramUnitNode,
 };
+use crate::parsing::{FALSE_KEYWORD, TRUE_KEYWORD};
 
 /// This struct provides a parser used to turn a series of Nack language tokens into an AST.
 ///
@@ -73,9 +74,21 @@ impl NackParser {
     /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
     fn handle_expr_atom_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier => Ok(ExpressionSubtreeRootNode::BoolLiteral(
-                BoolLiteralNode::try_from(self.tokens.pop()).unwrap_or_else(|e| panic!("{e}")),
-            )),
+            TokenKind::Identifier => {
+                let identifier = &self.tokens.peek(0).value;
+
+                if identifier == TRUE_KEYWORD || identifier == FALSE_KEYWORD {
+                    Ok(ExpressionSubtreeRootNode::BoolLiteral(
+                        BoolLiteralNode::try_from(self.tokens.pop())
+                            .unwrap_or_else(|e| panic!("{e}")),
+                    ))
+                } else {
+                    Ok(ExpressionSubtreeRootNode::Identifier(
+                        IdentifierNode::try_from(self.tokens.pop())
+                            .unwrap_or_else(|e| panic!("{e}")),
+                    ))
+                }
+            }
             TokenKind::IntLiteral => Ok(ExpressionSubtreeRootNode::IntLiteral(
                 IntLiteralNode::try_from(self.tokens.pop()).unwrap_or_else(|e| panic!("{e}")),
             )),
