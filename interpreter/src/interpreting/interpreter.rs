@@ -29,10 +29,10 @@ impl NackInterpreter {
         program_unit_node: &ProgramUnitNode,
     ) -> Result<(), InterpreterError> {
         match program_unit_node {
-            ProgramUnitNode::Expression(expr_node) => Ok(println!(
-                "{:?}",
-                self.evaluate_expression_tree(expr_node)?.value
-            )),
+            ProgramUnitNode::Expression(expr_node) => {
+                println!("{:?}", self.evaluate_expression_tree(expr_node)?.value);
+                Ok(())
+            }
         }
     }
 
