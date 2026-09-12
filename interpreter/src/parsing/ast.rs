@@ -5,10 +5,11 @@ pub enum ProgramUnitNode {
     Expression(ExpressionNode),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ExpressionSubtreeRootNode {
     IntLiteral(IntLiteralNode),
     BoolLiteral(BoolLiteralNode),
+    Identifier(IdentifierNode),
 }
 
 #[derive(Debug)]
@@ -16,16 +17,22 @@ pub struct NackProgramAST {
     pub program_units: Vec<ProgramUnitNode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExpressionNode {
     pub subtree_node: ExpressionSubtreeRootNode,
 }
 
-macro_rules! declare_literal_node {
+macro_rules! declare_token_node {
     ($name:ident, $kind:pat) => {
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq)]
         pub struct $name {
-            pub token: Token,
+            token: Token,
+        }
+
+        impl $name {
+            pub fn token(&self) -> &Token {
+                &self.token
+            }
         }
 
         impl TryFrom<Token> for $name {
@@ -49,5 +56,6 @@ macro_rules! declare_literal_node {
     };
 }
 
-declare_literal_node!(IntLiteralNode, TokenKind::IntLiteral);
-declare_literal_node!(BoolLiteralNode, TokenKind::Identifier);
+declare_token_node!(IntLiteralNode, TokenKind::IntLiteral);
+declare_token_node!(BoolLiteralNode, TokenKind::Identifier);
+declare_token_node!(IdentifierNode, TokenKind::Identifier);

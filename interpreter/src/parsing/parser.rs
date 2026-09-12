@@ -91,7 +91,7 @@ impl NackParser {
 mod parser_tests {
     use super::*;
     use crate::lexing::SourcePosition;
-    use crate::parsing::EXPRESSION_LABEL;
+    use crate::parsing::ast::IdentifierNode;
 
     #[test]
     fn test_handle_expr_atom_rule_correctly_parses() -> Result<(), SyntaxError> {
@@ -102,13 +102,13 @@ mod parser_tests {
                 kind: TokenKind::Identifier,
             }])
             .handle_expr_atom_rule()?,
-            ASTNode::of_token(
-                Token {
+            ExpressionSubtreeRootNode::BoolLiteral(
+                BoolLiteralNode::try_from(Token {
                     position: SourcePosition { line: 0, column: 0 },
                     value: String::from("true"),
                     kind: TokenKind::Identifier,
-                },
-                vec![]
+                })
+                .unwrap_or_else(|e| panic!("{e}"))
             )
         );
         assert_eq!(
@@ -118,13 +118,13 @@ mod parser_tests {
                 kind: TokenKind::IntLiteral,
             }])
             .handle_expr_atom_rule()?,
-            ASTNode::of_token(
-                Token {
+            ExpressionSubtreeRootNode::IntLiteral(
+                IntLiteralNode::try_from(Token {
                     position: SourcePosition { line: 0, column: 0 },
                     value: String::from("123"),
                     kind: TokenKind::IntLiteral,
-                },
-                vec![]
+                })
+                .unwrap_or_else(|e| panic!("{e}"))
             )
         );
         assert_eq!(
@@ -134,13 +134,13 @@ mod parser_tests {
                 kind: TokenKind::Identifier,
             }])
             .handle_expr_atom_rule()?,
-            ASTNode::of_token(
-                Token {
+            ExpressionSubtreeRootNode::Identifier(
+                IdentifierNode::try_from(Token {
                     position: SourcePosition { line: 0, column: 0 },
                     value: String::from("foo"),
                     kind: TokenKind::Identifier,
-                },
-                vec![]
+                })
+                .unwrap_or_else(|e| panic!("{e}"))
             )
         );
 
@@ -169,17 +169,16 @@ mod parser_tests {
                 kind: TokenKind::Identifier,
             }])
             .handle_expression_rule()?,
-            ASTNode::of_grouping(
-                EXPRESSION_LABEL,
-                vec![ASTNode::of_token(
-                    Token {
+            ExpressionNode {
+                subtree_node: ExpressionSubtreeRootNode::Identifier(
+                    IdentifierNode::try_from(Token {
                         position: SourcePosition { line: 0, column: 0 },
                         value: String::from("foo"),
                         kind: TokenKind::Identifier,
-                    },
-                    vec![]
-                )]
-            )
+                    })
+                    .unwrap_or_else(|e| panic!("{e}"))
+                )
+            }
         );
 
         Ok(())
