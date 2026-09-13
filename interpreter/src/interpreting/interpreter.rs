@@ -1,8 +1,8 @@
 use crate::interpreting::values::{CoreNackValue, NackValue};
+use crate::parsing::TRUE_KEYWORD;
 use crate::parsing::ast::{
     ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
 };
-use crate::parsing::{FALSE_KEYWORD, TRUE_KEYWORD};
 
 /// This struct provides an interpreter for Nack ASTs.
 pub struct NackInterpreter {}
@@ -22,8 +22,7 @@ impl NackInterpreter {
         Ok(())
     }
 
-    /// Evaluates a subtree with a `PROGRAM_UNIT` node at the root. If the root node is not a
-    /// `PROGRAM_UNIT` node, or an error occurs during interpreting, an error is returned.
+    /// Evaluates a program unit subtree.
     fn evaluate_program_unit_node(
         &mut self,
         program_unit_node: &ProgramUnitNode,
@@ -36,9 +35,7 @@ impl NackInterpreter {
         }
     }
 
-    /// Evaluates an expression subtree to produce a Nack value, including trees with an
-    /// `EXPRESSION` root node. An error is returned if the interpreter encounters an error during
-    /// evaluation.
+    /// Evaluates an expression tree to produce a Nack value.
     fn evaluate_expression_tree(
         &mut self,
         expression_node: &ExpressionNode,
@@ -56,18 +53,10 @@ impl NackInterpreter {
                     value: CoreNackValue::Int(value),
                 })
             }
-            ExpressionSubtreeRootNode::BoolLiteral(literal_node) => {
-                if literal_node.token().value == TRUE_KEYWORD
-                    || literal_node.token().value == FALSE_KEYWORD
-                {
-                    Ok(NackValue {
-                        value_type: String::from("Bool"),
-                        value: CoreNackValue::Bool(literal_node.token().value == TRUE_KEYWORD),
-                    })
-                } else {
-                    todo!()
-                }
-            }
+            ExpressionSubtreeRootNode::BoolLiteral(literal_node) => Ok(NackValue {
+                value_type: String::from("Bool"),
+                value: CoreNackValue::Bool(literal_node.token().value == TRUE_KEYWORD),
+            }),
             _ => todo!(),
         }
     }

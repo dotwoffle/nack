@@ -28,8 +28,7 @@ impl NackParser {
         }
     }
 
-    /// Parses the stored token stream and produces an AST. The returned node is the root of the
-    /// AST.
+    /// Parses the stored token stream and produces an AST.
     pub fn parse(mut self) -> Result<NackProgramAST, SyntaxError> {
         self.handle_program_rule()
     }
