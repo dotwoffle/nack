@@ -1,10 +1,19 @@
 use crate::lexing::{Token, TokenKind};
+use std::fmt::{Debug, Formatter};
 
 /// This enum represents an AST node containing a program unit subtree.
 #[derive(Debug)]
 pub enum ProgramUnitNode {
     /// An expression node.
     Expression(ExpressionNode),
+}
+
+impl ProgramUnitNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ProgramUnitNode::Expression(expr_node) => expr_node.dump(indent, f),
+        }
+    }
 }
 
 /// This enum represents an AST expression subtree.
@@ -18,11 +27,32 @@ pub enum ExpressionSubtreeRootNode {
     Identifier(IdentifierNode),
 }
 
+impl ExpressionSubtreeRootNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExpressionSubtreeRootNode::IntLiteral(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::BoolLiteral(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::Identifier(node) => node.dump(indent, f),
+        }
+    }
+}
+
 /// This struct represents the root node of a Nack AST.
-#[derive(Debug)]
 pub struct NackProgramAST {
     /// Each program unit subtree in this program.
     pub program_units: Vec<ProgramUnitNode>,
+}
+
+impl Debug for NackProgramAST {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Program")?;
+
+        for program_unit in &self.program_units {
+            program_unit.dump(1, f)?;
+        }
+
+        Ok(())
+    }
 }
 
 /// This struct represents the root node of an expression tree.
@@ -30,6 +60,13 @@ pub struct NackProgramAST {
 pub struct ExpressionNode {
     /// The expression subtree root node that this expression contains.
     pub subtree_node: ExpressionSubtreeRootNode,
+}
+
+impl ExpressionNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}Expression", "  ".repeat(indent))?;
+        self.subtree_node.dump(indent + 1, f)
+    }
 }
 
 /// Declares a struct that represents a single node of the AST, containing a token of a specific
@@ -45,6 +82,10 @@ macro_rules! declare_token_node {
         impl $name {
             pub fn token(&self) -> &Token {
                 &self.token
+            }
+
+            fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+                writeln!(f, "{}{}", "  ".repeat(indent), self.token.value)
             }
         }
 
