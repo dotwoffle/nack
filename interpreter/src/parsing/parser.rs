@@ -102,57 +102,29 @@ impl NackParser {
 #[cfg(test)]
 mod parser_tests {
     use super::*;
-    use crate::lexing::SourcePosition;
     use crate::parsing::ast::IdentifierNode;
+    use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER, DUMMY_TOKEN_INT};
 
     #[test]
     fn test_handle_expr_atom_rule_correctly_parses() -> Result<(), SyntaxError> {
         assert_eq!(
-            NackParser::new(vec![Token {
-                position: SourcePosition { line: 0, column: 0 },
-                value: String::from("true"),
-                kind: TokenKind::Identifier,
-            }])
-            .handle_expr_atom_rule()?,
+            NackParser::new(vec![DUMMY_TOKEN_BOOL.clone()]).handle_expr_atom_rule()?,
             ExpressionSubtreeRootNode::BoolLiteral(
-                BoolLiteralNode::try_from(Token {
-                    position: SourcePosition { line: 0, column: 0 },
-                    value: String::from("true"),
-                    kind: TokenKind::Identifier,
-                })
-                .unwrap_or_else(|e| panic!("{e}"))
+                BoolLiteralNode::try_from(DUMMY_TOKEN_BOOL.clone())
+                    .unwrap_or_else(|e| panic!("{e}"))
             )
         );
         assert_eq!(
-            NackParser::new(vec![Token {
-                position: SourcePosition { line: 0, column: 0 },
-                value: String::from("123"),
-                kind: TokenKind::IntLiteral,
-            }])
-            .handle_expr_atom_rule()?,
+            NackParser::new(vec![DUMMY_TOKEN_INT.clone()]).handle_expr_atom_rule()?,
             ExpressionSubtreeRootNode::IntLiteral(
-                IntLiteralNode::try_from(Token {
-                    position: SourcePosition { line: 0, column: 0 },
-                    value: String::from("123"),
-                    kind: TokenKind::IntLiteral,
-                })
-                .unwrap_or_else(|e| panic!("{e}"))
+                IntLiteralNode::try_from(DUMMY_TOKEN_INT.clone()).unwrap_or_else(|e| panic!("{e}"))
             )
         );
         assert_eq!(
-            NackParser::new(vec![Token {
-                position: SourcePosition { line: 0, column: 0 },
-                value: String::from("foo"),
-                kind: TokenKind::Identifier,
-            }])
-            .handle_expr_atom_rule()?,
+            NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expr_atom_rule()?,
             ExpressionSubtreeRootNode::Identifier(
-                IdentifierNode::try_from(Token {
-                    position: SourcePosition { line: 0, column: 0 },
-                    value: String::from("foo"),
-                    kind: TokenKind::Identifier,
-                })
-                .unwrap_or_else(|e| panic!("{e}"))
+                IdentifierNode::try_from(DUMMY_TOKEN_IDENTIFIER.clone())
+                    .unwrap_or_else(|e| panic!("{e}"))
             )
         );
 
@@ -162,33 +134,20 @@ mod parser_tests {
     #[test]
     fn test_handle_expr_atom_rule_returns_error_for_malformed_token_stream() {
         assert!(
-            NackParser::new(vec![Token {
-                position: SourcePosition { line: 0, column: 0 },
-                value: String::new(),
-                kind: TokenKind::Eof
-            }])
-            .handle_expr_atom_rule()
-            .is_err()
+            NackParser::new(vec![DUMMY_TOKEN_EOF.clone()])
+                .handle_expr_atom_rule()
+                .is_err()
         );
     }
 
     #[test]
     fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
         assert_eq!(
-            NackParser::new(vec![Token {
-                position: SourcePosition { line: 0, column: 0 },
-                value: String::from("foo"),
-                kind: TokenKind::Identifier,
-            }])
-            .handle_expression_rule()?,
+            NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expression_rule()?,
             ExpressionNode {
                 subtree_node: ExpressionSubtreeRootNode::Identifier(
-                    IdentifierNode::try_from(Token {
-                        position: SourcePosition { line: 0, column: 0 },
-                        value: String::from("foo"),
-                        kind: TokenKind::Identifier,
-                    })
-                    .unwrap_or_else(|e| panic!("{e}"))
+                    IdentifierNode::try_from(DUMMY_TOKEN_IDENTIFIER.clone())
+                        .unwrap_or_else(|e| panic!("{e}"))
                 )
             }
         );
@@ -199,13 +158,9 @@ mod parser_tests {
     #[test]
     fn test_handle_expression_rule_returns_error_for_malformed_token_stream() {
         assert!(
-            NackParser::new(vec![Token {
-                position: SourcePosition { line: 0, column: 0 },
-                value: String::new(),
-                kind: TokenKind::Eof
-            }])
-            .handle_expression_rule()
-            .is_err()
+            NackParser::new(vec![DUMMY_TOKEN_EOF.clone()])
+                .handle_expression_rule()
+                .is_err()
         );
     }
 

@@ -72,20 +72,16 @@ pub enum InterpreterError {
 #[cfg(test)]
 mod expression_tests {
     use super::*;
-    use crate::lexing::{SourcePosition, Token, TokenKind};
     use crate::parsing::ast::{BoolLiteralNode, IntLiteralNode};
+    use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_INT};
 
     #[test]
     fn test_interpreting_expr_atoms_returns_correct_values() {
         assert_eq!(
             NackInterpreter::new().evaluate_expression_tree(&ExpressionNode {
                 subtree_node: ExpressionSubtreeRootNode::IntLiteral(
-                    IntLiteralNode::try_from(Token {
-                        position: SourcePosition { line: 0, column: 0 },
-                        value: String::from("123"),
-                        kind: TokenKind::IntLiteral,
-                    })
-                    .unwrap_or_else(|e| panic!("{e}"))
+                    IntLiteralNode::try_from(DUMMY_TOKEN_INT.clone())
+                        .unwrap_or_else(|e| panic!("{e}"))
                 )
             }),
             Ok(NackValue {
@@ -96,12 +92,8 @@ mod expression_tests {
         assert_eq!(
             NackInterpreter::new().evaluate_expression_tree(&ExpressionNode {
                 subtree_node: ExpressionSubtreeRootNode::BoolLiteral(
-                    BoolLiteralNode::try_from(Token {
-                        position: SourcePosition { line: 0, column: 0 },
-                        value: String::from("true"),
-                        kind: TokenKind::Identifier,
-                    })
-                    .unwrap_or_else(|e| panic!("{e}"))
+                    BoolLiteralNode::try_from(DUMMY_TOKEN_BOOL.clone())
+                        .unwrap_or_else(|e| panic!("{e}"))
                 )
             }),
             Ok(NackValue {

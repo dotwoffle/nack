@@ -18,7 +18,7 @@ pub enum TokenKind {
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
 /// type, a position, and a string value, representing the token as it appeared within the source
 /// string.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     /// The position within the source string where the first character of this token is found.
     pub position: SourcePosition,

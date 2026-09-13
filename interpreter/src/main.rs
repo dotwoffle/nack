@@ -7,6 +7,8 @@ use std::{env, fs::read_to_string};
 pub mod interpreting;
 mod lexing;
 mod parsing;
+#[cfg(test)]
+pub mod test;
 
 fn main() -> ExitCode {
     let args = env::args().collect::<Vec<String>>();
