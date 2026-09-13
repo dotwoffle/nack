@@ -4,9 +4,11 @@ use crate::parsing::parser::NackParser;
 use std::process::ExitCode;
 use std::{env, fs::read_to_string};
 
-pub mod interpreting;
+mod interpreting;
 mod lexing;
 mod parsing;
+#[cfg(test)]
+mod test;
 
 fn main() -> ExitCode {
     let args = env::args().collect::<Vec<String>>();
