@@ -22,7 +22,9 @@ PROGRAM -> PROGRAM_UNIT* eof
 
 PROGRAM_UNIT -> EXPRESSION
 
-EXPRESSION -> EXPR_ATOM
+EXPRESSION -> MULT_EXPR ((plusSign | minusSign) MULT_EXPR)*
+MULT_EXPR -> EXPR_ATOM ((asterisk | slash) EXPR_ATOM)*
+EXPR_ATOM -> leftParen EXPRESSION rightParen
 EXPR_ATOM -> intLiteral
 EXPR_ATOM -> identifier
 ```
