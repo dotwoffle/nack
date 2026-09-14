@@ -5,6 +5,8 @@ use std::{collections::HashMap, sync::LazyLock};
 /// This enum represents the different kinds of Nack language tokens.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TokenKind {
+    /// An asterisk.
+    Asterisk,
     /// A special token type indicating the end of the token stream.
     Eof,
     /// Identifiers and keywords.
@@ -13,6 +15,16 @@ pub enum TokenKind {
     Ignore,
     /// An integer literal.
     IntLiteral,
+    /// Opening parenthesis.
+    LeftParen,
+    /// A subtraction symbol.
+    MinusSign,
+    /// An addition symbol.
+    PlusSign,
+    /// Closing parenthesis.
+    RightParen,
+    /// A forward slash.
+    Slash,
 }
 
 /// This struct represents a single Nack language token, parsed from a source string. Tokens have a
@@ -121,8 +133,8 @@ impl SourcePosition {
                 line: self.line + num_newlines as u64,
                 column: (token_value.len()
                     - token_value
-                        .rfind('\n')
-                        .expect("Newline count in extracted token was not 0"))
+                    .rfind('\n')
+                    .expect("Newline count in extracted token was not 0"))
                     as u64,
             }
         }
@@ -146,13 +158,13 @@ pub fn tokenize_source_string(source_string: &str) -> Result<Vec<Token>, SyntaxE
     while !current_source_string.is_empty() {
         let (token_kind, token_value) =
             find_next_token(current_source_string).ok_or(SyntaxError {
-                position: current_position.clone(),
+                position: current_position,
                 message: String::from("No tokens matched here"),
             })?;
 
         if token_kind != TokenKind::Ignore {
             tokens.push(Token {
-                position: current_position.clone(),
+                position: current_position,
                 value: token_value.to_owned(),
                 kind: token_kind,
             });
@@ -176,6 +188,10 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
     let mut m = HashMap::new();
 
     m.insert(
+        TokenKind::Asterisk,
+        Regex::new(r"\*").expect("Failed to compile regex for Asterisk"),
+    );
+    m.insert(
         TokenKind::Identifier,
         Regex::new(r"[_a-zA-Z][_a-zA-Z0-9]*").expect("Failed to compile regex for Identifier"),
     );
@@ -186,6 +202,26 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
     m.insert(
         TokenKind::IntLiteral,
         Regex::new(r"0|([1-9][0-9]*)").expect("Failed to compile regex for IntLiteral"),
+    );
+    m.insert(
+        TokenKind::LeftParen,
+        Regex::new(r"\(").expect("Failed to compile regex for LeftParen"),
+    );
+    m.insert(
+        TokenKind::MinusSign,
+        Regex::new(r"-").expect("Failed to compile regex for MinusSign"),
+    );
+    m.insert(
+        TokenKind::PlusSign,
+        Regex::new(r"\+").expect("Failed to compile regex for PlusSign"),
+    );
+    m.insert(
+        TokenKind::RightParen,
+        Regex::new(r"\)").expect("Failed to compile regex for RightParen"),
+    );
+    m.insert(
+        TokenKind::Slash,
+        Regex::new(r"/").expect("Failed to compile regex for Slash"),
     );
 
     m

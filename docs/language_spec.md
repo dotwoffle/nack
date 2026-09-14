@@ -35,6 +35,12 @@ Note that `eof` is a special terminal that is not matched by any pattern and is 
 token stream.
 
 ```
+asterisk: \*
 intLiteral: 0|([1-9][0-9]*)
 identifier: [_a-zA-Z][_a-zA-Z0-9]*
+leftParen: \(
+minusSign: -
+plusSign: \+
+rightParen: \)
+slash: /
 ```
