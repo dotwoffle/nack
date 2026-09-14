@@ -25,6 +25,8 @@ pub enum ExpressionSubtreeRootNode {
     BoolLiteral(BoolLiteralNode),
     /// An identifier node.
     Identifier(IdentifierNode),
+    /// A binary operator node.
+    BinaryOperator(Box<BinaryOperatorNode>),
 }
 
 impl ExpressionSubtreeRootNode {
@@ -33,6 +35,7 @@ impl ExpressionSubtreeRootNode {
             ExpressionSubtreeRootNode::IntLiteral(node) => node.dump(indent, f),
             ExpressionSubtreeRootNode::BoolLiteral(node) => node.dump(indent, f),
             ExpressionSubtreeRootNode::Identifier(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::BinaryOperator(node) => node.dump(indent, f),
         }
     }
 }
@@ -69,6 +72,43 @@ impl ExpressionNode {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct BinaryOperatorNode {
+    pub lhs: ExpressionSubtreeRootNode,
+    pub rhs: ExpressionSubtreeRootNode,
+    token: Token,
+}
+
+impl BinaryOperatorNode {
+    pub fn try_new(
+        lhs: ExpressionSubtreeRootNode,
+        rhs: ExpressionSubtreeRootNode,
+        token: Token,
+    ) -> Result<Self, String> {
+        if matches!(
+            token.kind,
+            TokenKind::Asterisk | TokenKind::MinusSign | TokenKind::PlusSign | TokenKind::Slash
+        ) {
+            Ok(Self { lhs, rhs, token })
+        } else {
+            Err(format!(
+                "Cannot construct a BinaryOperatorNode from a {:?} token",
+                token.kind
+            ))
+        }
+    }
+
+    pub fn token(&self) -> &Token {
+        &self.token
+    }
+
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}{}", "  ".repeat(indent), self.token.value)?;
+        self.lhs.dump(indent + 1, f)?;
+        self.rhs.dump(indent + 1, f)
+    }
+}
+
 /// Declares a struct that represents a single node of the AST, containing a token of a specific
 /// kind. The declared struct implements `TryFrom<Token>` and only succeeds if the given token is
 /// the required kind.
@@ -94,7 +134,7 @@ macro_rules! declare_token_node {
 
             fn try_from(token: Token) -> Result<Self, Self::Error> {
                 if matches!(token.kind, $kind) {
-                    Ok($name { token })
+                    Ok(Self { token })
                 } else {
                     Err(format!(
                         concat!(

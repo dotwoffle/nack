@@ -1,7 +1,7 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
-    BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IdentifierNode, IntLiteralNode,
-    NackProgramAST, ProgramUnitNode,
+    BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IdentifierNode,
+    IntLiteralNode, NackProgramAST, ProgramUnitNode,
 };
 use crate::parsing::{FALSE_KEYWORD, TRUE_KEYWORD};
 
@@ -59,15 +59,20 @@ impl NackParser {
 
     /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
     fn handle_expression_rule(&mut self) -> Result<ExpressionNode, SyntaxError> {
-        match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => self
-                .handle_expr_atom_rule()
-                .map(|subtree_node| ExpressionNode { subtree_node }),
-            _ => Err(SyntaxError {
-                position: self.tokens.peek(0).position,
-                message: String::from("Expected an expression here"),
-            }),
-        }
+        Ok(ExpressionNode {
+            subtree_node: self.handle_binary_op_expression_rule(
+                &[TokenKind::PlusSign, TokenKind::MinusSign],
+                Self::handle_mult_expr_rule,
+            )?,
+        })
+    }
+
+    /// Parses the MULT_EXPR language rule and returns the root of the produced subtree.
+    fn handle_mult_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
+        self.handle_binary_op_expression_rule(
+            &[TokenKind::Asterisk, TokenKind::Slash],
+            Self::handle_expr_atom_rule,
+        )
     }
 
     /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
@@ -96,6 +101,29 @@ impl NackParser {
                 message: String::from("Expected an expression here"),
             }),
         }
+    }
+
+    fn handle_binary_op_expression_rule<F>(
+        &mut self,
+        operator_token_types: &[TokenKind],
+        sub_grammar_rule: F,
+    ) -> Result<ExpressionSubtreeRootNode, SyntaxError>
+    where
+        F: Fn(&mut NackParser) -> Result<ExpressionSubtreeRootNode, SyntaxError>,
+    {
+        let mut expr_root_node = sub_grammar_rule(self)?;
+
+        while self.tokens.next_token_has_types(operator_token_types) {
+            let operator_token = self.tokens.pop();
+            let rhs_node = sub_grammar_rule(self)?;
+            let operator_node =
+                BinaryOperatorNode::try_new(expr_root_node, rhs_node, operator_token)
+                    .unwrap_or_else(|e| panic!("{e}"));
+
+            expr_root_node = ExpressionSubtreeRootNode::BinaryOperator(Box::new(operator_node))
+        }
+
+        Ok(expr_root_node)
     }
 }
 

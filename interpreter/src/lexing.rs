@@ -133,8 +133,8 @@ impl SourcePosition {
                 line: self.line + num_newlines as u64,
                 column: (token_value.len()
                     - token_value
-                    .rfind('\n')
-                    .expect("Newline count in extracted token was not 0"))
+                        .rfind('\n')
+                        .expect("Newline count in extracted token was not 0"))
                     as u64,
             }
         }
