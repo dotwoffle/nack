@@ -130,30 +130,53 @@ impl NackParser {
 #[cfg(test)]
 mod parser_tests {
     use super::*;
+    use crate::create_dummy_subtree_node;
     use crate::parsing::ast::IdentifierNode;
-    use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER, DUMMY_TOKEN_INT};
+    use crate::test::{
+        DUMMY_TOKEN_BOOL, DUMMY_TOKEN_CLOSE_PAREN, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER,
+        DUMMY_TOKEN_INT, DUMMY_TOKEN_MULT_SIGN, DUMMY_TOKEN_OPEN_PAREN, DUMMY_TOKEN_PLUS_SIGN,
+    };
 
     #[test]
     fn test_handle_expr_atom_rule_correctly_parses() -> Result<(), SyntaxError> {
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_BOOL.clone()]).handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::BoolLiteral(
-                BoolLiteralNode::try_from(DUMMY_TOKEN_BOOL.clone())
-                    .unwrap_or_else(|e| panic!("{e}"))
-            )
+            create_dummy_subtree_node!(BoolLiteral, BoolLiteralNode, DUMMY_TOKEN_BOOL)
         );
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_INT.clone()]).handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::IntLiteral(
-                IntLiteralNode::try_from(DUMMY_TOKEN_INT.clone()).unwrap_or_else(|e| panic!("{e}"))
-            )
+            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT)
         );
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::Identifier(
-                IdentifierNode::try_from(DUMMY_TOKEN_IDENTIFIER.clone())
-                    .unwrap_or_else(|e| panic!("{e}"))
-            )
+            create_dummy_subtree_node!(Identifier, IdentifierNode, DUMMY_TOKEN_IDENTIFIER)
+        );
+        assert_eq!(
+            NackParser::new(vec![
+                DUMMY_TOKEN_OPEN_PAREN.clone(),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_PLUS_SIGN.clone(),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_CLOSE_PAREN.clone(),
+                DUMMY_TOKEN_MULT_SIGN.clone(),
+                DUMMY_TOKEN_INT.clone(),
+            ])
+            .handle_expr_atom_rule()?,
+            ExpressionSubtreeRootNode::BinaryOperator(Box::new(
+                BinaryOperatorNode::try_new(
+                    ExpressionSubtreeRootNode::BinaryOperator(Box::new(
+                        BinaryOperatorNode::try_new(
+                            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                            DUMMY_TOKEN_PLUS_SIGN.clone(),
+                        )
+                        .unwrap_or_else(|e| panic!("{e}")),
+                    )),
+                    create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                    DUMMY_TOKEN_MULT_SIGN.clone(),
+                )
+                .unwrap_or_else(|e| panic!("{e}")),
+            ))
         );
 
         Ok(())
@@ -173,9 +196,10 @@ mod parser_tests {
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expression_rule()?,
             ExpressionNode {
-                subtree_node: ExpressionSubtreeRootNode::Identifier(
-                    IdentifierNode::try_from(DUMMY_TOKEN_IDENTIFIER.clone())
-                        .unwrap_or_else(|e| panic!("{e}"))
+                subtree_node: create_dummy_subtree_node!(
+                    Identifier,
+                    IdentifierNode,
+                    DUMMY_TOKEN_IDENTIFIER
                 )
             }
         );
