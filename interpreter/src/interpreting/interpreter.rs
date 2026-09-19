@@ -72,16 +72,20 @@ pub enum InterpreterError {
 #[cfg(test)]
 mod expression_tests {
     use super::*;
-    use crate::parsing::ast::{BoolLiteralNode, IntLiteralNode};
-    use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_INT};
+    use crate::create_dummy_subtree_node;
+    use crate::parsing::ast::{BinaryOperatorNode, BoolLiteralNode, IntLiteralNode};
+    use crate::test::{
+        DUMMY_TOKEN_BOOL, DUMMY_TOKEN_INT, DUMMY_TOKEN_MULT_SIGN, DUMMY_TOKEN_PLUS_SIGN,
+    };
 
     #[test]
     fn test_interpreting_expr_atoms_returns_correct_values() {
         assert_eq!(
             NackInterpreter::new().evaluate_expression_tree(&ExpressionNode {
-                subtree_node: ExpressionSubtreeRootNode::IntLiteral(
-                    IntLiteralNode::try_from(DUMMY_TOKEN_INT.clone())
-                        .unwrap_or_else(|e| panic!("{e}"))
+                subtree_node: create_dummy_subtree_node!(
+                    IntLiteral,
+                    IntLiteralNode,
+                    DUMMY_TOKEN_INT
                 )
             }),
             Ok(NackValue {
@@ -91,9 +95,10 @@ mod expression_tests {
         );
         assert_eq!(
             NackInterpreter::new().evaluate_expression_tree(&ExpressionNode {
-                subtree_node: ExpressionSubtreeRootNode::BoolLiteral(
-                    BoolLiteralNode::try_from(DUMMY_TOKEN_BOOL.clone())
-                        .unwrap_or_else(|e| panic!("{e}"))
+                subtree_node: create_dummy_subtree_node!(
+                    BoolLiteral,
+                    BoolLiteralNode,
+                    DUMMY_TOKEN_BOOL
                 )
             }),
             Ok(NackValue {
