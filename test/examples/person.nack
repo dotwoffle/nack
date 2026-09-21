@@ -1,0 +1,83 @@
+type Person {
+
+    variant AgeClass {
+        Child,
+        Teen,
+        Adult,
+        Senior
+    }
+
+    field age: Int
+    field name: String
+
+    derived ageClass: AgeClass {
+        => if {
+            |this.age <= 11| => AgeClass.Child
+            |this.age <= 19| => AgeClass.Teen
+            |this.age <= 64| => AgeClass.Adult
+            => AgeClass.Senior
+        }
+    }
+
+    Person: (name: String) -> Person {
+        => (name, 0) -> Person
+    }
+
+    Person: (name: String, age: Int) -> Person {
+        => Person {
+            .name = name,
+            .age = age,
+            .birthYear = 2026 - age
+        }
+    }
+
+    celebrateBirthday: (this) -> Person {
+        => Person {
+            .age = this.age + 1,
+            ...
+        }
+    }
+
+    changeName: (this, name: String) -> Person {
+        => Person {
+            .name = name,
+            ...
+        }
+    }
+
+    ==: (this, other: Person) -> bool {
+        => this.name == other.name and this.age == other.age
+    }
+
+    internal birthYear: Int
+
+}
+
+main: (args: [String]) -> ()! {
+
+    let name = args[1]
+    let age = args[2] -> parseInt -> orAbort
+    let person1 = (name, age) -> Person
+
+    => action {
+
+        do "Create your person!" -> printLine >> "Enter your name:" -> printLine
+
+        let name := getLine
+
+        do "Enter your age:" -> printLine
+
+        let age := getAge
+        let person2 = (name, age) -> Person
+
+        do "Your person is " + person2.name + " at age " + person2.age -> printLine
+        do "My person is class " + person1.class + ", and yours is " + person2.class -> printLine
+
+        do if {
+            |person1 == person2| => "We're the same person!"
+            => "We're nothing alike."
+        } -> printLine
+
+    }
+
+}
