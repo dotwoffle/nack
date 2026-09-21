@@ -50,3 +50,11 @@ macro_rules! create_dummy_subtree_node {
         )
     };
 }
+
+pub fn create_dummy_token(token_kind: TokenKind, value: &str) -> Token {
+    Token {
+        position: SourcePosition { line: 0, column: 0 },
+        value: String::from(value),
+        kind: token_kind,
+    }
+}
