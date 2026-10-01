@@ -1,0 +1,12 @@
+import io.files.openFile
+
+main: (args: [String]) -> ()! {
+    "test.txt" -> readFileLines -> map {(str) => str -> printLine} -> compose
+}
+
+readFileLines: (filePath: String) -> [String]! {
+    => action {
+        let fileBytes := filePath -> openFile -> readAllBytes
+        => fileBytes -> map {(b) => b -> Char} -> String -> split '\n'
+    }
+}
