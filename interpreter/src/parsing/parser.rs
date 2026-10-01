@@ -1,7 +1,7 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
-    BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IdentifierNode,
-    IntLiteralNode, NackProgramAST, ProgramUnitNode,
+    BinaryOperator, BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode,
+    IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode,
 };
 use crate::parsing::{FALSE_KEYWORD, TRUE_KEYWORD};
 
@@ -116,9 +116,11 @@ impl NackParser {
         while self.tokens.next_token_has_types(operator_token_types) {
             let operator_token = self.tokens.pop();
             let rhs_node = sub_grammar_rule(self)?;
-            let operator_node =
-                BinaryOperatorNode::try_new(expr_root_node, rhs_node, operator_token)
-                    .unwrap_or_else(|e| panic!("{e}"));
+            let operator_node = BinaryOperatorNode {
+                lhs: expr_root_node,
+                rhs: rhs_node,
+                operator: BinaryOperator::from(&operator_token),
+            };
 
             expr_root_node = ExpressionSubtreeRootNode::BinaryOperator(Box::new(operator_node))
         }
@@ -162,21 +164,15 @@ mod parser_tests {
                 DUMMY_TOKEN_INT.clone(),
             ])
             .handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::BinaryOperator(Box::new(
-                BinaryOperatorNode::try_new(
-                    ExpressionSubtreeRootNode::BinaryOperator(Box::new(
-                        BinaryOperatorNode::try_new(
-                            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
-                            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
-                            DUMMY_TOKEN_PLUS_SIGN.clone(),
-                        )
-                        .unwrap_or_else(|e| panic!("{e}")),
-                    )),
-                    create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
-                    DUMMY_TOKEN_MULT_SIGN.clone(),
-                )
-                .unwrap_or_else(|e| panic!("{e}")),
-            ))
+            ExpressionSubtreeRootNode::BinaryOperator(Box::new(BinaryOperatorNode {
+                lhs: ExpressionSubtreeRootNode::BinaryOperator(Box::new(BinaryOperatorNode {
+                    lhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                    rhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                    operator: BinaryOperator::Addition
+                })),
+                rhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                operator: BinaryOperator::Multiplication
+            }))
         );
 
         Ok(())

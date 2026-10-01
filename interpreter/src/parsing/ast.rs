@@ -1,4 +1,5 @@
 use crate::lexing::{Token, TokenKind};
+use crate::parsing::ast::BinaryOperator::{Addition, Division, Multiplication, Subtraction};
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents an AST node containing a program unit subtree.
@@ -27,6 +28,44 @@ pub enum ExpressionSubtreeRootNode {
     Identifier(IdentifierNode),
     /// A binary operator node.
     BinaryOperator(Box<BinaryOperatorNode>),
+}
+
+#[derive(PartialEq)]
+pub enum BinaryOperator {
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
+}
+
+impl Debug for BinaryOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Addition => "+",
+                Subtraction => "-",
+                Multiplication => "*",
+                Division => "/",
+            }
+        )
+    }
+}
+
+impl From<&Token> for BinaryOperator {
+    fn from(token: &Token) -> Self {
+        match token.kind {
+            TokenKind::Asterisk => Multiplication,
+            TokenKind::MinusSign => Subtraction,
+            TokenKind::PlusSign => Addition,
+            TokenKind::Slash => Division,
+            _ => panic!(
+                "{:?} is not a valid token type for binary operators",
+                token.kind
+            ),
+        }
+    }
 }
 
 impl ExpressionSubtreeRootNode {
@@ -76,34 +115,12 @@ impl ExpressionNode {
 pub struct BinaryOperatorNode {
     pub lhs: ExpressionSubtreeRootNode,
     pub rhs: ExpressionSubtreeRootNode,
-    token: Token,
+    pub operator: BinaryOperator,
 }
 
 impl BinaryOperatorNode {
-    pub fn try_new(
-        lhs: ExpressionSubtreeRootNode,
-        rhs: ExpressionSubtreeRootNode,
-        token: Token,
-    ) -> Result<Self, String> {
-        if matches!(
-            token.kind,
-            TokenKind::Asterisk | TokenKind::MinusSign | TokenKind::PlusSign | TokenKind::Slash
-        ) {
-            Ok(Self { lhs, rhs, token })
-        } else {
-            Err(format!(
-                "Cannot construct a BinaryOperatorNode from a {:?} token",
-                token.kind
-            ))
-        }
-    }
-
-    pub fn token(&self) -> &Token {
-        &self.token
-    }
-
     fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}{}", "  ".repeat(indent), self.token.value)?;
+        writeln!(f, "{}{:?}", "  ".repeat(indent), self.operator)?;
         self.lhs.dump(indent + 1, f)?;
         self.rhs.dump(indent + 1, f)
     }

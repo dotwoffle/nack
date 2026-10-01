@@ -1,7 +1,7 @@
 use crate::interpreting::values::{CoreNackValue, NackValue};
 use crate::parsing::TRUE_KEYWORD;
 use crate::parsing::ast::{
-    ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
+    BinaryOperatorNode, ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
 };
 
 /// This struct provides an interpreter for Nack ASTs.
@@ -57,6 +57,15 @@ impl NackInterpreter {
                 value_type: String::from("Bool"),
                 value: CoreNackValue::Bool(literal_node.token().value == TRUE_KEYWORD),
             }),
+            ExpressionSubtreeRootNode::BinaryOperator(operator_node) => {
+                match (**operator_node).operator {
+                    // BinaryOperator::AdditionOperator => {}
+                    // BinaryOperator::SubtractionOperator => {}
+                    // BinaryOperator::MultiplicationOperator => {}
+                    // BinaryOperator::DivisionOperator => {}
+                    _ => todo!(),
+                }
+            }
             _ => todo!(),
         }
     }
@@ -75,7 +84,9 @@ mod expression_tests {
     use crate::create_dummy_subtree_node;
     use crate::lexing::TokenKind;
     use crate::lexing::TokenKind::IntLiteral;
-    use crate::parsing::ast::{BinaryOperatorNode, BoolLiteralNode, IntLiteralNode};
+    use crate::parsing::ast::{
+        BinaryOperator, BinaryOperatorNode, BoolLiteralNode, IntLiteralNode,
+    };
     use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_INT, create_dummy_token};
 
     #[test]
@@ -117,29 +128,25 @@ mod expression_tests {
         ) -> ExpressionNode {
             ExpressionNode {
                 subtree_node: ExpressionSubtreeRootNode::BinaryOperator(Box::new(
-                    BinaryOperatorNode::try_new(
-                        create_dummy_subtree_node!(
+                    BinaryOperatorNode {
+                        lhs: create_dummy_subtree_node!(
                             IntLiteral,
                             IntLiteralNode,
                             create_dummy_token(IntLiteral, lhs)
                         ),
-                        create_dummy_subtree_node!(
+                        rhs: create_dummy_subtree_node!(
                             IntLiteral,
                             IntLiteralNode,
                             create_dummy_token(IntLiteral, rhs)
                         ),
-                        create_dummy_token(
-                            operator_type,
-                            match operator_type {
-                                TokenKind::PlusSign => "+",
-                                TokenKind::MinusSign => "-",
-                                TokenKind::Asterisk => "*",
-                                TokenKind::Slash => "/",
-                                _ => panic!("Unknown built in operator type"),
-                            },
-                        ),
-                    )
-                    .unwrap_or_else(|e| panic!("{e}")),
+                        operator: match operator_type {
+                            TokenKind::PlusSign => BinaryOperator::Addition,
+                            TokenKind::MinusSign => BinaryOperator::Subtraction,
+                            TokenKind::Asterisk => BinaryOperator::Multiplication,
+                            TokenKind::Slash => BinaryOperator::Division,
+                            _ => panic!("Unknown built in operator type {operator_type:?}"),
+                        },
+                    },
                 )),
             }
         }
