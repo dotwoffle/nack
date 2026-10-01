@@ -1,0 +1,137 @@
+import io.network.ServerSocket
+import io.network.ClientSocket
+
+type EchoServer {
+
+    EchoServer: (port: Int) -> Result[EchoServer] {
+        => match port -> ServerSocket {
+            |socket: Success| => Success{.value = EchoServer{.socket = socket.value}}
+            |e: Error| => e
+        }
+    }
+
+    open: (this) -> Result[EchoServer]! {
+
+        => action {
+
+            let socket := this.socket -> open
+
+            => match socket {
+                |Success| => Success{.value = EchoServer{.socket = socket}}
+                |e: Error| => e
+            }
+
+        }
+
+    }
+
+    run: (this) -> ()! {
+
+        handleClient: (client: ClientSocket) -> ()! {
+
+            => action {
+
+                let clientDisconnected := client -> getAndEchoMessage
+
+                do if {
+                    |clientDisconnected| => "Client disconnected" -> printLine
+                    => client -> handleClient
+                }
+
+            }
+
+        }
+
+        getAndEchoMessage: (client: ClientSocket) -> Bool! {
+
+            => action {
+
+                let data := client -> readData
+                let message = data -> orAbort -> String
+                let clientDisconnected := if {
+                    |message -> isEmpty| => true -> return
+                    => action {
+                        do "Received message from client: " + message -> printLine
+                        do message.data -> client.sendData
+                    }
+                }
+
+                => clientDisconnected
+
+            }
+
+        }
+
+        => action {
+
+            let client := this.socket -> acceptConnection
+            let client = client -> orAbort
+
+            do client -> handleClient
+            do this.socket -> close
+
+        }
+
+    }
+
+    internal socket: ServerSocket
+
+}
+
+type EchoClient {
+
+    EchoClient: (serverIp: String, serverPort: Int) -> Result[EchoClient] {
+        => match (serverIp, serverPort) -> ClientSocket {
+            |socket: Success| => Success{.value = EchoClient{.socket = socket.value}}
+            |e: Error| => e
+        }
+    }
+
+    connect: (this) -> Result[EchoClient]! {
+
+        => action {
+
+            let socket := this.socket -> connect
+
+            => match socket {
+                |Success| => Success{.value = EchoClient{.socket = socket}}
+                |e: Error| => e
+            }
+
+        }
+
+    }
+
+    run: (this) -> ()! {
+
+        => action {
+
+            let message := stdin -> readLine
+
+            do match message {
+                |"STOP"| => this -> close
+                => action {
+                    do this -> sendMessageAndGetResponse message
+                    do this -> run
+                }
+            }
+
+        }
+
+    }
+
+    sendMessageAndGetResponse: (this, message: String) -> ()! {
+
+        => action {
+
+            do message.data -> this.client.sendData
+
+            let data := client -> readData
+
+            do "Received message from server: " + (data -> orAbort -> String) -> printLine
+
+        }
+
+    }
+
+}
