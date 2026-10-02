@@ -81,7 +81,7 @@ impl TokenStream {
         required_kind: &TokenKind,
         error_message: String,
     ) -> Result<Token, String> {
-        (self.peek(0).kind != *required_kind)
+        (self.peek(0).kind == *required_kind)
             .then(|| self.pop())
             .ok_or(error_message)
     }

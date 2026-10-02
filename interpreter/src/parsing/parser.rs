@@ -47,7 +47,7 @@ impl NackParser {
     /// Parses the PROGRAM_UNIT language rule and returns the root of the produced subtree.
     fn handle_program_unit_rule(&mut self) -> Result<ProgramUnitNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => self
+            TokenKind::Identifier | TokenKind::IntLiteral | TokenKind::LeftParen => self
                 .handle_expression_rule()
                 .map(ProgramUnitNode::Expression),
             _ => Err(SyntaxError {
@@ -96,6 +96,23 @@ impl NackParser {
             TokenKind::IntLiteral => Ok(ExpressionSubtreeRootNode::IntLiteral(
                 IntLiteralNode::try_from(self.tokens.pop()).unwrap_or_else(|e| panic!("{e}")),
             )),
+            TokenKind::LeftParen => {
+                self.tokens.pop();
+
+                let expr_subtree = self.handle_expression_rule()?.subtree_node;
+
+                self.tokens
+                    .require_and_pop(
+                        &TokenKind::RightParen,
+                        String::from("Missing closing parenthesis here"),
+                    )
+                    .map_err(|message| SyntaxError {
+                        position: self.tokens.peek(0).position,
+                        message,
+                    })?;
+
+                Ok(expr_subtree)
+            }
             _ => Err(SyntaxError {
                 position: self.tokens.peek(0).position,
                 message: String::from("Expected an expression here"),
@@ -162,6 +179,7 @@ mod parser_tests {
                 DUMMY_TOKEN_CLOSE_PAREN.clone(),
                 DUMMY_TOKEN_MULT_SIGN.clone(),
                 DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_EOF.clone(),
             ])
             .handle_expr_atom_rule()?,
             ExpressionSubtreeRootNode::BinaryOperator(Box::new(BinaryOperatorNode {
