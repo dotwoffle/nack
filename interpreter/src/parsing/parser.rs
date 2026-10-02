@@ -190,7 +190,11 @@ mod parser_tests {
     #[test]
     fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
         assert_eq!(
-            NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expression_rule()?,
+            NackParser::new(vec![
+                DUMMY_TOKEN_IDENTIFIER.clone(),
+                DUMMY_TOKEN_EOF.clone()
+            ])
+            .handle_expression_rule()?,
             ExpressionNode {
                 subtree_node: create_dummy_subtree_node!(
                     Identifier,

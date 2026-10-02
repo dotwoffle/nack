@@ -1,7 +1,7 @@
 use crate::interpreting::values::{CoreNackValue, NackValue};
 use crate::parsing::TRUE_KEYWORD;
 use crate::parsing::ast::{
-    BinaryOperatorNode, ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
+    BinaryOperator, ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
 };
 
 /// This struct provides an interpreter for Nack ASTs.
@@ -40,7 +40,14 @@ impl NackInterpreter {
         &mut self,
         expression_node: &ExpressionNode,
     ) -> Result<NackValue, InterpreterError> {
-        match &expression_node.subtree_node {
+        self.evaluate_expression_subtree(&expression_node.subtree_node)
+    }
+
+    fn evaluate_expression_subtree(
+        &mut self,
+        subtree_root_node: &ExpressionSubtreeRootNode,
+    ) -> Result<NackValue, InterpreterError> {
+        match subtree_root_node {
             ExpressionSubtreeRootNode::IntLiteral(literal_node) => {
                 let value = literal_node.token().value.parse().unwrap_or_else(|e| {
                     panic!(
@@ -58,12 +65,38 @@ impl NackInterpreter {
                 value: CoreNackValue::Bool(literal_node.token().value == TRUE_KEYWORD),
             }),
             ExpressionSubtreeRootNode::BinaryOperator(operator_node) => {
-                match (**operator_node).operator {
-                    // BinaryOperator::AdditionOperator => {}
-                    // BinaryOperator::SubtractionOperator => {}
-                    // BinaryOperator::MultiplicationOperator => {}
-                    // BinaryOperator::DivisionOperator => {}
-                    _ => todo!(),
+                //TODO turn operators into transforms
+                macro_rules! extract_value_from_nack_value {
+                    ($pattern:path, $value:expr) => {
+                        match $value.value {
+                            $pattern(value) => value,
+                            _ => panic!("Nack value with unexpected type {:?}", $value.value),
+                        }
+                    };
+                }
+
+                let lhs_value = self.evaluate_expression_subtree(&operator_node.lhs)?;
+                let lhs_value = extract_value_from_nack_value!(CoreNackValue::Int, lhs_value);
+                let rhs_value = self.evaluate_expression_subtree(&operator_node.rhs)?;
+                let rhs_value = extract_value_from_nack_value!(CoreNackValue::Int, rhs_value);
+
+                match operator_node.operator {
+                    BinaryOperator::Addition => Ok(NackValue {
+                        value_type: String::from("Int"),
+                        value: CoreNackValue::Int(lhs_value + rhs_value),
+                    }),
+                    BinaryOperator::Subtraction => Ok(NackValue {
+                        value_type: String::from("Int"),
+                        value: CoreNackValue::Int(lhs_value - rhs_value),
+                    }),
+                    BinaryOperator::Multiplication => Ok(NackValue {
+                        value_type: String::from("Int"),
+                        value: CoreNackValue::Int(lhs_value * rhs_value),
+                    }),
+                    BinaryOperator::Division => Ok(NackValue {
+                        value_type: String::from("Int"),
+                        value: CoreNackValue::Int(lhs_value / rhs_value),
+                    }),
                 }
             }
             _ => todo!(),
