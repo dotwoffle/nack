@@ -27,6 +27,10 @@ An `EXPRESSION` node must have exactly one child node of the following types:
 
 - `intLiteral`
 - `identifier`
+- `plusSign`
+- `minusSign`
+- `asterisk`
+- `slash`
 
 ### `PROGRAM`
 
