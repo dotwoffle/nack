@@ -12,6 +12,9 @@ The following is a list of self-contained expressions that produce a single Nack
   - Yields `Int`
 - Boolean literals
   - Yields `Bool`
+- Any expression enclosed in parentheses
+  - Yields whatever type is produced by the expression in the parentheses. Expressions inside parentheses are evaluated
+    before surrounding expressions.
 
 ## Language Grammar
 
