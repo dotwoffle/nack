@@ -153,7 +153,7 @@ mod parser_tests {
     use crate::parsing::ast::IdentifierNode;
     use crate::test::{
         DUMMY_TOKEN_BOOL, DUMMY_TOKEN_CLOSE_PAREN, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER,
-        DUMMY_TOKEN_INT, DUMMY_TOKEN_MULT_SIGN, DUMMY_TOKEN_OPEN_PAREN, DUMMY_TOKEN_PLUS_SIGN,
+        DUMMY_TOKEN_INT, DUMMY_TOKEN_OPEN_PAREN, DUMMY_TOKEN_PLUS_SIGN,
     };
 
     #[test]
@@ -174,22 +174,24 @@ mod parser_tests {
             NackParser::new(vec![
                 DUMMY_TOKEN_OPEN_PAREN.clone(),
                 DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_CLOSE_PAREN.clone(),
+            ])
+            .handle_expr_atom_rule()?,
+            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT)
+        );
+        assert_eq!(
+            NackParser::new(vec![
+                DUMMY_TOKEN_OPEN_PAREN.clone(),
+                DUMMY_TOKEN_INT.clone(),
                 DUMMY_TOKEN_PLUS_SIGN.clone(),
                 DUMMY_TOKEN_INT.clone(),
                 DUMMY_TOKEN_CLOSE_PAREN.clone(),
-                DUMMY_TOKEN_MULT_SIGN.clone(),
-                DUMMY_TOKEN_INT.clone(),
-                DUMMY_TOKEN_EOF.clone(),
             ])
             .handle_expr_atom_rule()?,
             ExpressionSubtreeRootNode::BinaryOperator(Box::new(BinaryOperatorNode {
-                lhs: ExpressionSubtreeRootNode::BinaryOperator(Box::new(BinaryOperatorNode {
-                    lhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
-                    rhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
-                    operator: BinaryOperator::Addition
-                })),
+                lhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
                 rhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
-                operator: BinaryOperator::Multiplication
+                operator: BinaryOperator::Addition
             }))
         );
 
