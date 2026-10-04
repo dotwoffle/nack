@@ -43,6 +43,7 @@ impl NackInterpreter {
         self.evaluate_expression_subtree(&expression_node.subtree_node)
     }
 
+    /// Evaluates an expression subtree to produce a Nack value.
     fn evaluate_expression_subtree(
         &mut self,
         subtree_root_node: &ExpressionSubtreeRootNode,

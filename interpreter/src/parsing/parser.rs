@@ -120,6 +120,10 @@ impl NackParser {
         }
     }
 
+    /// Handles one of the language rules that deals with binary operation expressions. Given a list
+    /// of token kinds that represent the possible operations the rule can handle, and the rule
+    /// handler function itself, this function will automatically construct the appropriate
+    /// expression subtree for the binary operation. Returns the root of the produced subtree.
     fn handle_binary_op_expression_rule<F>(
         &mut self,
         operator_token_types: &[TokenKind],

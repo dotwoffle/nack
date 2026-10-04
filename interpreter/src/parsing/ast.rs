@@ -26,10 +26,11 @@ pub enum ExpressionSubtreeRootNode {
     BoolLiteral(BoolLiteralNode),
     /// An identifier node.
     Identifier(IdentifierNode),
-    /// A binary operator node.
+    /// A binary operator node. Currently must be a box due to recursive typing.
     BinaryOperator(Box<BinaryOperatorNode>),
 }
 
+/// This enum represents all the possible binary operations.
 #[derive(PartialEq)]
 pub enum BinaryOperator {
     Addition,
@@ -54,6 +55,15 @@ impl Debug for BinaryOperator {
 }
 
 impl From<&Token> for BinaryOperator {
+    /// Constructs the appropriate BinaryOperator variant from the given token. The token's kind is
+    /// used to determine which variant to construct. The mapping is as follows:
+    ///
+    /// - `Asterisk` -> `Multiplication`
+    /// - `MinusSign` -> `Subtraction`
+    /// - `PlusSign` -> `Addition`
+    /// - `Slash` -> `Division`
+    ///
+    /// If a token with any other kind is given, this function panics.
     fn from(token: &Token) -> Self {
         match token.kind {
             TokenKind::Asterisk => Multiplication,
@@ -111,10 +121,14 @@ impl ExpressionNode {
     }
 }
 
+/// This struct represents an AST node that is the root of a binary operation expression subtree.
 #[derive(Debug, PartialEq)]
 pub struct BinaryOperatorNode {
+    /// The root node of the left hand side of the binary expression.
     pub lhs: ExpressionSubtreeRootNode,
+    /// The root node of the right hand side of the binary expression.
     pub rhs: ExpressionSubtreeRootNode,
+    /// The binary operation this node represents.
     pub operator: BinaryOperator,
 }
 
