@@ -16,6 +16,16 @@ The following is a list of self-contained expressions that produce a single Nack
   - Yields whatever type is produced by the expression in the parentheses. Expressions inside parentheses are evaluated
     before surrounding expressions.
 
+### Operators
+
+Nack has several built in operators that apply to one or more expressions. The following is a comprehensive list, in
+order of precedence (from highest to lowest):
+
+1.`*` (Binary multiplication), `/` (Binary division)
+2. `+` (Binary addition), `-` (Binary subtraction)
+
+An expression wrapped in parentheses overrides the natural precedence of the operators.
+
 ## Language Grammar
 
 ### Rules
