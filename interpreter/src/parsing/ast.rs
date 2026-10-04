@@ -1,4 +1,5 @@
 use crate::lexing::{Token, TokenKind};
+use crate::parsing::ast::BinaryOperator::{Addition, Division, Multiplication, Subtraction};
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents an AST node containing a program unit subtree.
@@ -25,6 +26,56 @@ pub enum ExpressionSubtreeRootNode {
     BoolLiteral(BoolLiteralNode),
     /// An identifier node.
     Identifier(IdentifierNode),
+    /// A binary operator node. Currently must be a box due to recursive typing.
+    BinaryOperator(Box<BinaryOperatorNode>),
+}
+
+/// This enum represents all the possible binary operations.
+#[derive(PartialEq)]
+pub enum BinaryOperator {
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
+}
+
+impl Debug for BinaryOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Addition => "+",
+                Subtraction => "-",
+                Multiplication => "*",
+                Division => "/",
+            }
+        )
+    }
+}
+
+impl From<&Token> for BinaryOperator {
+    /// Constructs the appropriate BinaryOperator variant from the given token. The token's kind is
+    /// used to determine which variant to construct. The mapping is as follows:
+    ///
+    /// - `Asterisk` -> `Multiplication`
+    /// - `MinusSign` -> `Subtraction`
+    /// - `PlusSign` -> `Addition`
+    /// - `Slash` -> `Division`
+    ///
+    /// If a token with any other kind is given, this function panics.
+    fn from(token: &Token) -> Self {
+        match token.kind {
+            TokenKind::Asterisk => Multiplication,
+            TokenKind::MinusSign => Subtraction,
+            TokenKind::PlusSign => Addition,
+            TokenKind::Slash => Division,
+            _ => panic!(
+                "{:?} is not a valid token type for binary operators",
+                token.kind
+            ),
+        }
+    }
 }
 
 impl ExpressionSubtreeRootNode {
@@ -33,6 +84,7 @@ impl ExpressionSubtreeRootNode {
             ExpressionSubtreeRootNode::IntLiteral(node) => node.dump(indent, f),
             ExpressionSubtreeRootNode::BoolLiteral(node) => node.dump(indent, f),
             ExpressionSubtreeRootNode::Identifier(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::BinaryOperator(node) => node.dump(indent, f),
         }
     }
 }
@@ -69,6 +121,25 @@ impl ExpressionNode {
     }
 }
 
+/// This struct represents an AST node that is the root of a binary operation expression subtree.
+#[derive(Debug, PartialEq)]
+pub struct BinaryOperatorNode {
+    /// The root node of the left hand side of the binary expression.
+    pub lhs: ExpressionSubtreeRootNode,
+    /// The root node of the right hand side of the binary expression.
+    pub rhs: ExpressionSubtreeRootNode,
+    /// The binary operation this node represents.
+    pub operator: BinaryOperator,
+}
+
+impl BinaryOperatorNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}{:?}", "  ".repeat(indent), self.operator)?;
+        self.lhs.dump(indent + 1, f)?;
+        self.rhs.dump(indent + 1, f)
+    }
+}
+
 /// Declares a struct that represents a single node of the AST, containing a token of a specific
 /// kind. The declared struct implements `TryFrom<Token>` and only succeeds if the given token is
 /// the required kind.
@@ -94,7 +165,7 @@ macro_rules! declare_token_node {
 
             fn try_from(token: Token) -> Result<Self, Self::Error> {
                 if matches!(token.kind, $kind) {
-                    Ok($name { token })
+                    Ok(Self { token })
                 } else {
                     Err(format!(
                         concat!(

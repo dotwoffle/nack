@@ -1,7 +1,7 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
-    BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode, IdentifierNode, IntLiteralNode,
-    NackProgramAST, ProgramUnitNode,
+    BinaryOperator, BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode,
+    IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode,
 };
 use crate::parsing::{FALSE_KEYWORD, TRUE_KEYWORD};
 
@@ -47,7 +47,7 @@ impl NackParser {
     /// Parses the PROGRAM_UNIT language rule and returns the root of the produced subtree.
     fn handle_program_unit_rule(&mut self) -> Result<ProgramUnitNode, SyntaxError> {
         match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => self
+            TokenKind::Identifier | TokenKind::IntLiteral | TokenKind::LeftParen => self
                 .handle_expression_rule()
                 .map(ProgramUnitNode::Expression),
             _ => Err(SyntaxError {
@@ -59,15 +59,20 @@ impl NackParser {
 
     /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
     fn handle_expression_rule(&mut self) -> Result<ExpressionNode, SyntaxError> {
-        match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral => self
-                .handle_expr_atom_rule()
-                .map(|subtree_node| ExpressionNode { subtree_node }),
-            _ => Err(SyntaxError {
-                position: self.tokens.peek(0).position,
-                message: String::from("Expected an expression here"),
-            }),
-        }
+        Ok(ExpressionNode {
+            subtree_node: self.handle_binary_op_expression_rule(
+                &[TokenKind::PlusSign, TokenKind::MinusSign],
+                Self::handle_mult_expr_rule,
+            )?,
+        })
+    }
+
+    /// Parses the MULT_EXPR language rule and returns the root of the produced subtree.
+    fn handle_mult_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
+        self.handle_binary_op_expression_rule(
+            &[TokenKind::Asterisk, TokenKind::Slash],
+            Self::handle_expr_atom_rule,
+        )
     }
 
     /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
@@ -91,41 +96,107 @@ impl NackParser {
             TokenKind::IntLiteral => Ok(ExpressionSubtreeRootNode::IntLiteral(
                 IntLiteralNode::try_from(self.tokens.pop()).unwrap_or_else(|e| panic!("{e}")),
             )),
+            TokenKind::LeftParen => {
+                self.tokens.pop();
+
+                let expr_subtree = self.handle_expression_rule()?.subtree_node;
+
+                self.tokens
+                    .require_and_pop(
+                        &TokenKind::RightParen,
+                        String::from("Missing closing parenthesis here"),
+                    )
+                    .map_err(|message| SyntaxError {
+                        position: self.tokens.peek(0).position,
+                        message,
+                    })?;
+
+                Ok(expr_subtree)
+            }
             _ => Err(SyntaxError {
                 position: self.tokens.peek(0).position,
                 message: String::from("Expected an expression here"),
             }),
         }
     }
+
+    /// Handles one of the language rules that deals with binary operation expressions. Given a list
+    /// of token kinds that represent the possible operations the rule can handle, and the rule
+    /// handler function itself, this function will automatically construct the appropriate
+    /// expression subtree for the binary operation. Returns the root of the produced subtree.
+    fn handle_binary_op_expression_rule<F>(
+        &mut self,
+        operator_token_types: &[TokenKind],
+        sub_grammar_rule: F,
+    ) -> Result<ExpressionSubtreeRootNode, SyntaxError>
+    where
+        F: Fn(&mut NackParser) -> Result<ExpressionSubtreeRootNode, SyntaxError>,
+    {
+        let mut expr_root_node = sub_grammar_rule(self)?;
+
+        while self.tokens.next_token_has_types(operator_token_types) {
+            let operator_token = self.tokens.pop();
+            let rhs_node = sub_grammar_rule(self)?;
+            let operator_node = BinaryOperatorNode {
+                lhs: expr_root_node,
+                rhs: rhs_node,
+                operator: BinaryOperator::from(&operator_token),
+            };
+
+            expr_root_node = ExpressionSubtreeRootNode::BinaryOperator(Box::new(operator_node))
+        }
+
+        Ok(expr_root_node)
+    }
 }
 
 #[cfg(test)]
 mod parser_tests {
     use super::*;
+    use crate::create_dummy_subtree_node;
     use crate::parsing::ast::IdentifierNode;
-    use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER, DUMMY_TOKEN_INT};
+    use crate::test::{
+        DUMMY_TOKEN_BOOL, DUMMY_TOKEN_CLOSE_PAREN, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER,
+        DUMMY_TOKEN_INT, DUMMY_TOKEN_OPEN_PAREN, DUMMY_TOKEN_PLUS_SIGN,
+    };
 
     #[test]
     fn test_handle_expr_atom_rule_correctly_parses() -> Result<(), SyntaxError> {
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_BOOL.clone()]).handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::BoolLiteral(
-                BoolLiteralNode::try_from(DUMMY_TOKEN_BOOL.clone())
-                    .unwrap_or_else(|e| panic!("{e}"))
-            )
+            create_dummy_subtree_node!(BoolLiteral, BoolLiteralNode, DUMMY_TOKEN_BOOL)
         );
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_INT.clone()]).handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::IntLiteral(
-                IntLiteralNode::try_from(DUMMY_TOKEN_INT.clone()).unwrap_or_else(|e| panic!("{e}"))
-            )
+            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT)
         );
         assert_eq!(
             NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expr_atom_rule()?,
-            ExpressionSubtreeRootNode::Identifier(
-                IdentifierNode::try_from(DUMMY_TOKEN_IDENTIFIER.clone())
-                    .unwrap_or_else(|e| panic!("{e}"))
-            )
+            create_dummy_subtree_node!(Identifier, IdentifierNode, DUMMY_TOKEN_IDENTIFIER)
+        );
+        assert_eq!(
+            NackParser::new(vec![
+                DUMMY_TOKEN_OPEN_PAREN.clone(),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_CLOSE_PAREN.clone(),
+            ])
+            .handle_expr_atom_rule()?,
+            create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT)
+        );
+        assert_eq!(
+            NackParser::new(vec![
+                DUMMY_TOKEN_OPEN_PAREN.clone(),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_PLUS_SIGN.clone(),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_CLOSE_PAREN.clone(),
+            ])
+            .handle_expr_atom_rule()?,
+            ExpressionSubtreeRootNode::BinaryOperator(Box::new(BinaryOperatorNode {
+                lhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                rhs: create_dummy_subtree_node!(IntLiteral, IntLiteralNode, DUMMY_TOKEN_INT),
+                operator: BinaryOperator::Addition
+            }))
         );
 
         Ok(())
@@ -143,11 +214,16 @@ mod parser_tests {
     #[test]
     fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
         assert_eq!(
-            NackParser::new(vec![DUMMY_TOKEN_IDENTIFIER.clone()]).handle_expression_rule()?,
+            NackParser::new(vec![
+                DUMMY_TOKEN_IDENTIFIER.clone(),
+                DUMMY_TOKEN_EOF.clone()
+            ])
+            .handle_expression_rule()?,
             ExpressionNode {
-                subtree_node: ExpressionSubtreeRootNode::Identifier(
-                    IdentifierNode::try_from(DUMMY_TOKEN_IDENTIFIER.clone())
-                        .unwrap_or_else(|e| panic!("{e}"))
+                subtree_node: create_dummy_subtree_node!(
+                    Identifier,
+                    IdentifierNode,
+                    DUMMY_TOKEN_IDENTIFIER
                 )
             }
         );
