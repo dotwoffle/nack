@@ -21,10 +21,21 @@ The following is a list of self-contained expressions that produce a single Nack
 Nack has several built in operators that apply to one or more expressions. The following is a comprehensive list, in
 order of precedence (from highest to lowest):
 
-1.`*` (Binary multiplication), `/` (Binary division)
-2. `+` (Binary addition), `-` (Binary subtraction)
+1. `not` (Unary logical negation)
+2. `*` (Binary multiplication), `/` (Binary division)
+3. `+` (Binary addition), `-` (Binary subtraction)
+4. `and` (Binary logical AND)
+5. `or` (Binary logical OR)
 
 An expression wrapped in parentheses overrides the natural precedence of the operators.
+
+## Keywords
+
+The following is a list of reserved language keywords that cannot be used as user-defined identifiers:
+
+- `and`
+- `not`
+- `or`
 
 ## Language Grammar
 
