@@ -77,27 +77,75 @@ impl NackInterpreter {
                 }
 
                 let lhs_value = self.evaluate_expression_subtree(&operator_node.lhs)?;
-                let lhs_value = extract_value_from_nack_value!(CoreNackValue::Int, lhs_value);
                 let rhs_value = self.evaluate_expression_subtree(&operator_node.rhs)?;
-                let rhs_value = extract_value_from_nack_value!(CoreNackValue::Int, rhs_value);
 
                 match operator_node.operator {
-                    BinaryOperator::Addition => Ok(NackValue {
-                        value_type: String::from("Int"),
-                        value: CoreNackValue::Int(lhs_value + rhs_value),
-                    }),
-                    BinaryOperator::Subtraction => Ok(NackValue {
-                        value_type: String::from("Int"),
-                        value: CoreNackValue::Int(lhs_value - rhs_value),
-                    }),
-                    BinaryOperator::Multiplication => Ok(NackValue {
-                        value_type: String::from("Int"),
-                        value: CoreNackValue::Int(lhs_value * rhs_value),
-                    }),
-                    BinaryOperator::Division => Ok(NackValue {
-                        value_type: String::from("Int"),
-                        value: CoreNackValue::Int(lhs_value / rhs_value),
-                    }),
+                    BinaryOperator::Addition => {
+                        let lhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, lhs_value);
+                        let rhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, rhs_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Int"),
+                            value: CoreNackValue::Int(lhs_value + rhs_value),
+                        })
+                    }
+                    BinaryOperator::Subtraction => {
+                        let lhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, lhs_value);
+                        let rhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, rhs_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Int"),
+                            value: CoreNackValue::Int(lhs_value - rhs_value),
+                        })
+                    }
+                    BinaryOperator::Multiplication => {
+                        let lhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, lhs_value);
+                        let rhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, rhs_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Int"),
+                            value: CoreNackValue::Int(lhs_value * rhs_value),
+                        })
+                    }
+                    BinaryOperator::Division => {
+                        let lhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, lhs_value);
+                        let rhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Int, rhs_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Int"),
+                            value: CoreNackValue::Int(lhs_value / rhs_value),
+                        })
+                    }
+                    BinaryOperator::LogicalAnd => {
+                        let lhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Bool, lhs_value);
+                        let rhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Bool, rhs_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Bool"),
+                            value: CoreNackValue::Bool(lhs_value && rhs_value),
+                        })
+                    }
+                    BinaryOperator::LogicalOr => {
+                        let lhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Bool, lhs_value);
+                        let rhs_value =
+                            extract_value_from_nack_value!(CoreNackValue::Bool, rhs_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Bool"),
+                            value: CoreNackValue::Bool(lhs_value || rhs_value),
+                        })
+                    }
                     _ => todo!(),
                 }
             }
