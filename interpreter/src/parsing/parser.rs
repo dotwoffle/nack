@@ -3,7 +3,7 @@ use crate::parsing::ast::{
     BinaryOperator, BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode,
     IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode,
 };
-use crate::parsing::{FALSE_KEYWORD, TRUE_KEYWORD};
+use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, OR_KEYWORD, TRUE_KEYWORD};
 
 /// This struct provides a parser used to turn a series of Nack language tokens into an AST.
 ///
@@ -60,11 +60,27 @@ impl NackParser {
     /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
     fn handle_expression_rule(&mut self) -> Result<ExpressionNode, SyntaxError> {
         Ok(ExpressionNode {
-            subtree_node: self.handle_binary_op_expression_rule(
-                &[TokenKind::PlusSign, TokenKind::MinusSign],
-                Self::handle_mult_expr_rule,
+            subtree_node: self.handle_keyworded_binary_op_expression_rule(
+                &[OR_KEYWORD.to_string()],
+                Self::handle_and_expr_rule,
             )?,
         })
+    }
+
+    /// Parses the AND_EXPR language rule and returns the root of the produced subtree.
+    fn handle_and_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
+        self.handle_keyworded_binary_op_expression_rule(
+            &[AND_KEYWORD.to_string()],
+            Self::handle_add_expr_rule,
+        )
+    }
+
+    /// Parses the ADD_EXPR language rule and returns the root of the produced subtree.
+    fn handle_add_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
+        self.handle_binary_op_expression_rule(
+            &[TokenKind::PlusSign, TokenKind::MinusSign],
+            Self::handle_mult_expr_rule,
+        )
     }
 
     /// Parses the MULT_EXPR language rule and returns the root of the produced subtree.
@@ -135,6 +151,33 @@ impl NackParser {
         let mut expr_root_node = sub_grammar_rule(self)?;
 
         while self.tokens.next_token_has_types(operator_token_types) {
+            let operator_token = self.tokens.pop();
+            let rhs_node = sub_grammar_rule(self)?;
+            let operator_node = BinaryOperatorNode {
+                lhs: expr_root_node,
+                rhs: rhs_node,
+                operator: BinaryOperator::from(&operator_token),
+            };
+
+            expr_root_node = ExpressionSubtreeRootNode::BinaryOperator(Box::new(operator_node))
+        }
+
+        Ok(expr_root_node)
+    }
+
+    fn handle_keyworded_binary_op_expression_rule<F>(
+        &mut self,
+        operator_keywords: &[String],
+        sub_grammar_rule: F,
+    ) -> Result<ExpressionSubtreeRootNode, SyntaxError>
+    where
+        F: Fn(&mut NackParser) -> Result<ExpressionSubtreeRootNode, SyntaxError>,
+    {
+        let mut expr_root_node = sub_grammar_rule(self)?;
+
+        while matches!(self.tokens.peek(0).kind, TokenKind::Identifier)
+            && operator_keywords.contains(&self.tokens.peek(0).value)
+        {
             let operator_token = self.tokens.pop();
             let rhs_node = sub_grammar_rule(self)?;
             let operator_node = BinaryOperatorNode {
