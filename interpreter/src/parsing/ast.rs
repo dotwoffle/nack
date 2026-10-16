@@ -1,5 +1,8 @@
 use crate::lexing::{Token, TokenKind};
-use crate::parsing::ast::BinaryOperator::{Addition, Division, Multiplication, Subtraction};
+use crate::parsing::ast::BinaryOperator::{
+    Addition, Division, LogicalAnd, LogicalOr, Multiplication, Subtraction,
+};
+use crate::parsing::{AND_KEYWORD, OR_KEYWORD};
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents an AST node containing a program unit subtree.
@@ -37,6 +40,8 @@ pub enum BinaryOperator {
     Subtraction,
     Multiplication,
     Division,
+    LogicalAnd,
+    LogicalOr,
 }
 
 impl Debug for BinaryOperator {
@@ -49,6 +54,8 @@ impl Debug for BinaryOperator {
                 Subtraction => "-",
                 Multiplication => "*",
                 Division => "/",
+                LogicalAnd => AND_KEYWORD,
+                LogicalOr => OR_KEYWORD,
             }
         )
     }
@@ -62,14 +69,23 @@ impl From<&Token> for BinaryOperator {
     /// - `MinusSign` -> `Subtraction`
     /// - `PlusSign` -> `Addition`
     /// - `Slash` -> `Division`
+    /// - `Identifier` -> Only valid if the token's value is a valid binary operator keyword. The
+    ///   valid keywords are as follows:
+    ///     - "and" -> `LogicalAnd`
+    ///     - "or" -> `LogicalOr`
     ///
-    /// If a token with any other kind is given, this function panics.
+    /// If a token that doesn't match the above criteria is given, this function panics.
     fn from(token: &Token) -> Self {
         match token.kind {
             TokenKind::Asterisk => Multiplication,
             TokenKind::MinusSign => Subtraction,
             TokenKind::PlusSign => Addition,
             TokenKind::Slash => Division,
+            TokenKind::Identifier => match token.value.as_ref() {
+                AND_KEYWORD => LogicalAnd,
+                OR_KEYWORD => LogicalOr,
+                _ => panic!("{} is not a valid binary operator keyword", token.value),
+            },
             _ => panic!(
                 "{:?} is not a valid token type for binary operators",
                 token.kind

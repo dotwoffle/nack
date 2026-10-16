@@ -98,6 +98,7 @@ impl NackInterpreter {
                         value_type: String::from("Int"),
                         value: CoreNackValue::Int(lhs_value / rhs_value),
                     }),
+                    _ => todo!(),
                 }
             }
             _ => todo!(),
