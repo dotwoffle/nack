@@ -41,13 +41,18 @@ The following is a list of reserved language keywords that cannot be used as use
 
 ### Rules
 
+> *Note:* A terminal in "quotes" is an `identifier` terminal with a specific string value.
+
 ```
 PROGRAM -> PROGRAM_UNIT* eof
 
 PROGRAM_UNIT -> EXPRESSION
 
-EXPRESSION -> MULT_EXPR ((plusSign | minusSign) MULT_EXPR)*
-MULT_EXPR -> EXPR_ATOM ((asterisk | slash) EXPR_ATOM)*
+EXPRESSION -> AND_EXPR ("or" AND_EXPR)*
+AND_EXPR -> ADD_EXPR ("and" ADD_EXPR)*
+ADD_EXPR -> MULT_EXPR ((plusSign | minusSign) MULT_EXPR)*
+MULT_EXPR -> NEGATE_EXPR ((asterisk | slash) NEGATE_EXPR)*
+NEGATE_EXPR -> "not"? (NEGATE_EXPR | EXPR_ATOM)
 EXPR_ATOM -> leftParen EXPRESSION rightParen
 EXPR_ATOM -> intLiteral
 EXPR_ATOM -> identifier
