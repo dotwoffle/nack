@@ -166,9 +166,10 @@ mod expression_tests {
     use crate::create_dummy_subtree_node;
     use crate::lexing::TokenKind::{Identifier, IntLiteral};
     use crate::parsing::ast::{
-        BinaryOperator, BinaryOperatorNode, BoolLiteralNode, IntLiteralNode,
+        BinaryOperator, BinaryOperatorNode, BoolLiteralNode, IntLiteralNode, UnaryOperator,
+        UnaryOperatorNode,
     };
-    use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, OR_KEYWORD};
+    use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, NOT_KEYWORD, OR_KEYWORD};
     use crate::test::{
         DUMMY_TOKEN_BOOL, DUMMY_TOKEN_DIVIDE_SIGN, DUMMY_TOKEN_INT, DUMMY_TOKEN_MINUS_SIGN,
         DUMMY_TOKEN_MULT_SIGN, DUMMY_TOKEN_PLUS_SIGN, create_dummy_token,
@@ -310,6 +311,40 @@ mod expression_tests {
             Ok(NackValue {
                 value_type: String::from("Bool"),
                 value: CoreNackValue::Bool(true)
+            })
+        );
+    }
+
+    #[test]
+    fn test_built_in_unary_operators_return_correct_values() {
+        macro_rules! build_unary_operator_tree {
+            ($operand:expr, $operator_token:expr, $operand_subtree_variant:ident, $operand_subtree_node_type:ident, $operand_token_type:ident) => {
+                ExpressionNode {
+                    subtree_node: ExpressionSubtreeRootNode::UnaryOperator(Box::new(
+                        UnaryOperatorNode {
+                            expression: create_dummy_subtree_node!(
+                                $operand_subtree_variant,
+                                $operand_subtree_node_type,
+                                create_dummy_token($operand_token_type, $operand)
+                            ),
+                            operator: UnaryOperator::from(&$operator_token),
+                        },
+                    )),
+                }
+            };
+        }
+
+        assert_eq!(
+            NackInterpreter::new().evaluate_expression_tree(&build_unary_operator_tree!(
+                TRUE_KEYWORD,
+                create_dummy_token(Identifier, NOT_KEYWORD),
+                BoolLiteral,
+                BoolLiteralNode,
+                Identifier
+            )),
+            Ok(NackValue {
+                value_type: String::from("Bool"),
+                value: CoreNackValue::Bool(false)
             })
         );
     }
