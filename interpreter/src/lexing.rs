@@ -99,6 +99,11 @@ impl TokenStream {
     pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
         types.contains(&self.peek(0).kind)
     }
+
+    pub fn next_token_is_keyword(&self, keywords: &[&str]) -> bool {
+        matches!(self.peek(0).kind, TokenKind::Identifier)
+            && keywords.contains(&self.peek(0).value.as_str())
+    }
 }
 
 /// This struct indicates the position within a source string at which a specific token is found. By

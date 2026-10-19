@@ -2,6 +2,7 @@ use crate::interpreting::values::{CoreNackValue, NackValue};
 use crate::parsing::TRUE_KEYWORD;
 use crate::parsing::ast::{
     BinaryOperator, ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
+    UnaryOperator,
 };
 
 /// This struct provides an interpreter for Nack ASTs.
@@ -48,6 +49,16 @@ impl NackInterpreter {
         &mut self,
         subtree_root_node: &ExpressionSubtreeRootNode,
     ) -> Result<NackValue, InterpreterError> {
+        //TODO turn operators into transforms
+        macro_rules! extract_value_from_nack_value {
+            ($pattern:path, $value:expr) => {
+                match $value.value {
+                    $pattern(value) => value,
+                    _ => panic!("Nack value with unexpected type {:?}", $value.value),
+                }
+            };
+        }
+
         match subtree_root_node {
             ExpressionSubtreeRootNode::IntLiteral(literal_node) => {
                 let value = literal_node.token().value.parse().unwrap_or_else(|e| {
@@ -66,16 +77,6 @@ impl NackInterpreter {
                 value: CoreNackValue::Bool(literal_node.token().value == TRUE_KEYWORD),
             }),
             ExpressionSubtreeRootNode::BinaryOperator(operator_node) => {
-                //TODO turn operators into transforms
-                macro_rules! extract_value_from_nack_value {
-                    ($pattern:path, $value:expr) => {
-                        match $value.value {
-                            $pattern(value) => value,
-                            _ => panic!("Nack value with unexpected type {:?}", $value.value),
-                        }
-                    };
-                }
-
                 let lhs_value = self.evaluate_expression_subtree(&operator_node.lhs)?;
                 let rhs_value = self.evaluate_expression_subtree(&operator_node.rhs)?;
 
@@ -148,7 +149,22 @@ impl NackInterpreter {
                     }
                 }
             }
-            _ => todo!(),
+            ExpressionSubtreeRootNode::UnaryOperator(operator_node) => {
+                let operand_value = self.evaluate_expression_subtree(&operator_node.expression)?;
+
+                match operator_node.operator {
+                    UnaryOperator::LogicalNot => {
+                        let operand_value =
+                            extract_value_from_nack_value!(CoreNackValue::Bool, operand_value);
+
+                        Ok(NackValue {
+                            value_type: String::from("Bool"),
+                            value: CoreNackValue::Bool(!operand_value),
+                        })
+                    }
+                }
+            }
+            ExpressionSubtreeRootNode::Identifier(_) => todo!(),
         }
     }
 }

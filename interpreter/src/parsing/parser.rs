@@ -1,9 +1,10 @@
 use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
     BinaryOperator, BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode,
-    IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode,
+    IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode, UnaryOperator,
+    UnaryOperatorNode,
 };
-use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, OR_KEYWORD, TRUE_KEYWORD};
+use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, NOT_KEYWORD, OR_KEYWORD, TRUE_KEYWORD};
 
 /// This struct provides a parser used to turn a series of Nack language tokens into an AST.
 ///
@@ -61,7 +62,7 @@ impl NackParser {
     fn handle_expression_rule(&mut self) -> Result<ExpressionNode, SyntaxError> {
         Ok(ExpressionNode {
             subtree_node: self.handle_keyworded_binary_op_expression_rule(
-                &[OR_KEYWORD.to_string()],
+                &[OR_KEYWORD],
                 Self::handle_and_expr_rule,
             )?,
         })
@@ -69,10 +70,7 @@ impl NackParser {
 
     /// Parses the AND_EXPR language rule and returns the root of the produced subtree.
     fn handle_and_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
-        self.handle_keyworded_binary_op_expression_rule(
-            &[AND_KEYWORD.to_string()],
-            Self::handle_add_expr_rule,
-        )
+        self.handle_keyworded_binary_op_expression_rule(&[AND_KEYWORD], Self::handle_add_expr_rule)
     }
 
     /// Parses the ADD_EXPR language rule and returns the root of the produced subtree.
@@ -87,8 +85,24 @@ impl NackParser {
     fn handle_mult_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
         self.handle_binary_op_expression_rule(
             &[TokenKind::Asterisk, TokenKind::Slash],
-            Self::handle_expr_atom_rule,
+            Self::handle_negate_expr_rule,
         )
+    }
+
+    /// Parses the NEGATE_EXPR language rule and returns the root of the produced subtree.
+    fn handle_negate_expr_rule(&mut self) -> Result<ExpressionSubtreeRootNode, SyntaxError> {
+        if !self.tokens.next_token_is_keyword(&[NOT_KEYWORD]) {
+            self.handle_expr_atom_rule()
+        } else {
+            let operator_token = self.tokens.pop();
+
+            Ok(ExpressionSubtreeRootNode::UnaryOperator(Box::new(
+                UnaryOperatorNode {
+                    expression: self.handle_negate_expr_rule()?,
+                    operator: UnaryOperator::from(&operator_token),
+                },
+            )))
+        }
     }
 
     /// Parses the EXPR_ATOM language rule and returns the root of the produced subtree.
@@ -167,7 +181,7 @@ impl NackParser {
 
     fn handle_keyworded_binary_op_expression_rule<F>(
         &mut self,
-        operator_keywords: &[String],
+        operator_keywords: &[&str],
         sub_grammar_rule: F,
     ) -> Result<ExpressionSubtreeRootNode, SyntaxError>
     where
@@ -175,9 +189,7 @@ impl NackParser {
     {
         let mut expr_root_node = sub_grammar_rule(self)?;
 
-        while matches!(self.tokens.peek(0).kind, TokenKind::Identifier)
-            && operator_keywords.contains(&self.tokens.peek(0).value)
-        {
+        while self.tokens.next_token_is_keyword(operator_keywords) {
             let operator_token = self.tokens.pop();
             let rhs_node = sub_grammar_rule(self)?;
             let operator_node = BinaryOperatorNode {
