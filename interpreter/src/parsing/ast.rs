@@ -51,11 +51,17 @@ impl ExpressionSubtreeRootNode {
 /// This enum represents all the possible binary operators.
 #[derive(PartialEq)]
 pub enum BinaryOperator {
+    /// The addition operator.
     Addition,
+    /// The subtraction operator.
     Subtraction,
+    /// The multiplication operator.
     Multiplication,
+    /// The division operator.
     Division,
+    /// The logical AND operator.
     LogicalAnd,
+    /// The logical OR operator.
     LogicalOr,
 }
 
@@ -112,6 +118,7 @@ impl From<&Token> for BinaryOperator {
 /// This enum represents all the possible unary operators.
 #[derive(PartialEq)]
 pub enum UnaryOperator {
+    /// The logical NOT operator.
     LogicalNot,
 }
 
