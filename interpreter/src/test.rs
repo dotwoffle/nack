@@ -1,46 +1,26 @@
 use crate::lexing::{SourcePosition, Token, TokenKind};
 use std::sync::LazyLock;
 
-pub static DUMMY_TOKEN_BOOL: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from("true"),
-    kind: TokenKind::Identifier,
-});
-pub static DUMMY_TOKEN_INT: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from("123"),
-    kind: TokenKind::IntLiteral,
-});
-pub static DUMMY_TOKEN_IDENTIFIER: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from("foo"),
-    kind: TokenKind::Identifier,
-});
-pub static DUMMY_TOKEN_EOF: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::new(),
-    kind: TokenKind::Eof,
-});
-pub static DUMMY_TOKEN_OPEN_PAREN: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from("("),
-    kind: TokenKind::LeftParen,
-});
-pub static DUMMY_TOKEN_CLOSE_PAREN: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from(")"),
-    kind: TokenKind::RightParen,
-});
-pub static DUMMY_TOKEN_PLUS_SIGN: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from("+"),
-    kind: TokenKind::PlusSign,
-});
-pub static DUMMY_TOKEN_MULT_SIGN: LazyLock<Token> = LazyLock::new(|| Token {
-    position: SourcePosition { line: 0, column: 0 },
-    value: String::from("*"),
-    kind: TokenKind::Asterisk,
-});
+pub static DUMMY_TOKEN_BOOL: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::Identifier, "true"));
+pub static DUMMY_TOKEN_INT: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::IntLiteral, "123"));
+pub static DUMMY_TOKEN_IDENTIFIER: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::Identifier, "foo"));
+pub static DUMMY_TOKEN_EOF: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::Eof, ""));
+pub static DUMMY_TOKEN_OPEN_PAREN: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::LeftParen, "("));
+pub static DUMMY_TOKEN_CLOSE_PAREN: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::RightParen, ")"));
+pub static DUMMY_TOKEN_PLUS_SIGN: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::PlusSign, "+"));
+pub static DUMMY_TOKEN_MINUS_SIGN: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::MinusSign, "-"));
+pub static DUMMY_TOKEN_MULT_SIGN: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::Asterisk, "*"));
+pub static DUMMY_TOKEN_DIVIDE_SIGN: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::Slash, "/"));
 
 #[macro_export]
 macro_rules! create_dummy_subtree_node {

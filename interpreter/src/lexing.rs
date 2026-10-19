@@ -94,10 +94,16 @@ impl TokenStream {
     }
 
     /// Checks if the next token in the stream is any of the given types. If there are no tokens
-    /// left in the stream,
-    /// this function panics.
+    /// left in the stream, this function panics.
     pub fn next_token_has_types(&self, types: &[TokenKind]) -> bool {
         types.contains(&self.peek(0).kind)
+    }
+
+    /// Checks if the next token in the stream is an identifier that represents any of the given
+    /// keywords. If there are no tokens left in the stream, this function panics.
+    pub fn next_token_is_keyword(&self, keywords: &[&str]) -> bool {
+        matches!(self.peek(0).kind, TokenKind::Identifier)
+            && keywords.contains(&self.peek(0).value.as_str())
     }
 }
 

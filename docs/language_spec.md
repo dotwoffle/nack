@@ -21,22 +21,38 @@ The following is a list of self-contained expressions that produce a single Nack
 Nack has several built in operators that apply to one or more expressions. The following is a comprehensive list, in
 order of precedence (from highest to lowest):
 
-1.`*` (Binary multiplication), `/` (Binary division)
-2. `+` (Binary addition), `-` (Binary subtraction)
+1. `not` (Unary logical negation)
+2. `*` (Binary multiplication), `/` (Binary division)
+3. `+` (Binary addition), `-` (Binary subtraction)
+4. `and` (Binary logical AND)
+5. `or` (Binary logical OR)
 
 An expression wrapped in parentheses overrides the natural precedence of the operators.
+
+## Keywords
+
+The following is a list of reserved language keywords that cannot be used as user-defined identifiers:
+
+- `and`
+- `not`
+- `or`
 
 ## Language Grammar
 
 ### Rules
+
+> *Note:* A terminal in "quotes" is an `identifier` terminal with a specific string value.
 
 ```
 PROGRAM -> PROGRAM_UNIT* eof
 
 PROGRAM_UNIT -> EXPRESSION
 
-EXPRESSION -> MULT_EXPR ((plusSign | minusSign) MULT_EXPR)*
-MULT_EXPR -> EXPR_ATOM ((asterisk | slash) EXPR_ATOM)*
+EXPRESSION -> AND_EXPR ("or" AND_EXPR)*
+AND_EXPR -> ADD_EXPR ("and" ADD_EXPR)*
+ADD_EXPR -> MULT_EXPR ((plusSign | minusSign) MULT_EXPR)*
+MULT_EXPR -> NEGATE_EXPR ((asterisk | slash) NEGATE_EXPR)*
+NEGATE_EXPR -> "not"? (NEGATE_EXPR | EXPR_ATOM)
 EXPR_ATOM -> leftParen EXPRESSION rightParen
 EXPR_ATOM -> intLiteral
 EXPR_ATOM -> identifier

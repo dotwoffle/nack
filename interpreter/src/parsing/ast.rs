@@ -1,5 +1,9 @@
 use crate::lexing::{Token, TokenKind};
-use crate::parsing::ast::BinaryOperator::{Addition, Division, Multiplication, Subtraction};
+use crate::parsing::ast::BinaryOperator::{
+    Addition, Division, LogicalAnd, LogicalOr, Multiplication, Subtraction,
+};
+use crate::parsing::ast::UnaryOperator::LogicalNot;
+use crate::parsing::{AND_KEYWORD, NOT_KEYWORD, OR_KEYWORD};
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents an AST node containing a program unit subtree.
@@ -28,15 +32,37 @@ pub enum ExpressionSubtreeRootNode {
     Identifier(IdentifierNode),
     /// A binary operator node. Currently must be a box due to recursive typing.
     BinaryOperator(Box<BinaryOperatorNode>),
+    /// A unary operator node.
+    UnaryOperator(Box<UnaryOperatorNode>),
 }
 
-/// This enum represents all the possible binary operations.
+impl ExpressionSubtreeRootNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExpressionSubtreeRootNode::IntLiteral(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::BoolLiteral(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::Identifier(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::BinaryOperator(node) => node.dump(indent, f),
+            ExpressionSubtreeRootNode::UnaryOperator(node) => node.dump(indent, f),
+        }
+    }
+}
+
+/// This enum represents all the possible binary operators.
 #[derive(PartialEq)]
 pub enum BinaryOperator {
+    /// The addition operator.
     Addition,
+    /// The subtraction operator.
     Subtraction,
+    /// The multiplication operator.
     Multiplication,
+    /// The division operator.
     Division,
+    /// The logical AND operator.
+    LogicalAnd,
+    /// The logical OR operator.
+    LogicalOr,
 }
 
 impl Debug for BinaryOperator {
@@ -49,6 +75,8 @@ impl Debug for BinaryOperator {
                 Subtraction => "-",
                 Multiplication => "*",
                 Division => "/",
+                LogicalAnd => AND_KEYWORD,
+                LogicalOr => OR_KEYWORD,
             }
         )
     }
@@ -62,14 +90,23 @@ impl From<&Token> for BinaryOperator {
     /// - `MinusSign` -> `Subtraction`
     /// - `PlusSign` -> `Addition`
     /// - `Slash` -> `Division`
+    /// - `Identifier` -> Only valid if the token's value is a valid binary operator keyword. The
+    ///   valid keywords are as follows:
+    ///     - "and" -> `LogicalAnd`
+    ///     - "or" -> `LogicalOr`
     ///
-    /// If a token with any other kind is given, this function panics.
+    /// If a token that doesn't match the above criteria is given, this function panics.
     fn from(token: &Token) -> Self {
         match token.kind {
             TokenKind::Asterisk => Multiplication,
             TokenKind::MinusSign => Subtraction,
             TokenKind::PlusSign => Addition,
             TokenKind::Slash => Division,
+            TokenKind::Identifier => match token.value.as_ref() {
+                AND_KEYWORD => LogicalAnd,
+                OR_KEYWORD => LogicalOr,
+                _ => panic!("{} is not a valid binary operator keyword", token.value),
+            },
             _ => panic!(
                 "{:?} is not a valid token type for binary operators",
                 token.kind
@@ -78,13 +115,44 @@ impl From<&Token> for BinaryOperator {
     }
 }
 
-impl ExpressionSubtreeRootNode {
-    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExpressionSubtreeRootNode::IntLiteral(node) => node.dump(indent, f),
-            ExpressionSubtreeRootNode::BoolLiteral(node) => node.dump(indent, f),
-            ExpressionSubtreeRootNode::Identifier(node) => node.dump(indent, f),
-            ExpressionSubtreeRootNode::BinaryOperator(node) => node.dump(indent, f),
+/// This enum represents all the possible unary operators.
+#[derive(PartialEq)]
+pub enum UnaryOperator {
+    /// The logical NOT operator.
+    LogicalNot,
+}
+
+impl Debug for UnaryOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::LogicalNot => NOT_KEYWORD,
+            }
+        )
+    }
+}
+
+impl From<&Token> for UnaryOperator {
+    /// Constructs the appropriate UnaryOperator variant from the given token. The token's kind is
+    /// used to determine which variant to construct. The mapping is as follows:
+    ///
+    /// - `Identifier` -> Only valid if the token's value is a valid unary operator keyword. The
+    ///   valid keywords are as follows:
+    ///     - "not" -> `LogicalNot`
+    ///
+    /// If a token that doesn't match the above criteria is given, this function panics.
+    fn from(token: &Token) -> Self {
+        match token.kind {
+            TokenKind::Identifier => match token.value.as_ref() {
+                NOT_KEYWORD => LogicalNot,
+                _ => panic!("{} is not a valid unary operator keyword", token.value),
+            },
+            _ => panic!(
+                "{:?} is not a valid token type for unary operators",
+                token.kind
+            ),
         }
     }
 }
@@ -137,6 +205,22 @@ impl BinaryOperatorNode {
         writeln!(f, "{}{:?}", "  ".repeat(indent), self.operator)?;
         self.lhs.dump(indent + 1, f)?;
         self.rhs.dump(indent + 1, f)
+    }
+}
+
+/// This struct represents an AST node that is the root of a binary operation expression subtree.
+#[derive(Debug, PartialEq)]
+pub struct UnaryOperatorNode {
+    /// The root node of the expression being operated on.
+    pub expression: ExpressionSubtreeRootNode,
+    /// The unary operation this node represents.
+    pub operator: UnaryOperator,
+}
+
+impl UnaryOperatorNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}{:?}", "  ".repeat(indent), self.operator)?;
+        self.expression.dump(indent + 1, f)
     }
 }
 
