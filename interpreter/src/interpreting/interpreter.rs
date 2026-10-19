@@ -146,7 +146,6 @@ impl NackInterpreter {
                             value: CoreNackValue::Bool(lhs_value || rhs_value),
                         })
                     }
-                    _ => todo!(),
                 }
             }
             _ => todo!(),
@@ -165,12 +164,15 @@ pub enum InterpreterError {
 mod expression_tests {
     use super::*;
     use crate::create_dummy_subtree_node;
-    use crate::lexing::TokenKind;
-    use crate::lexing::TokenKind::IntLiteral;
+    use crate::lexing::TokenKind::{Identifier, IntLiteral};
     use crate::parsing::ast::{
         BinaryOperator, BinaryOperatorNode, BoolLiteralNode, IntLiteralNode,
     };
-    use crate::test::{DUMMY_TOKEN_BOOL, DUMMY_TOKEN_INT, create_dummy_token};
+    use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, OR_KEYWORD};
+    use crate::test::{
+        DUMMY_TOKEN_BOOL, DUMMY_TOKEN_DIVIDE_SIGN, DUMMY_TOKEN_INT, DUMMY_TOKEN_MINUS_SIGN,
+        DUMMY_TOKEN_MULT_SIGN, DUMMY_TOKEN_PLUS_SIGN, create_dummy_token,
+    };
 
     #[test]
     fn test_interpreting_expr_atoms_returns_correct_values() {
@@ -203,42 +205,37 @@ mod expression_tests {
     }
 
     #[test]
-    fn test_built_in_operators_return_correct_values() {
-        fn build_binary_operator_tree(
-            lhs: &str,
-            rhs: &str,
-            operator_type: TokenKind,
-        ) -> ExpressionNode {
-            ExpressionNode {
-                subtree_node: ExpressionSubtreeRootNode::BinaryOperator(Box::new(
-                    BinaryOperatorNode {
-                        lhs: create_dummy_subtree_node!(
-                            IntLiteral,
-                            IntLiteralNode,
-                            create_dummy_token(IntLiteral, lhs)
-                        ),
-                        rhs: create_dummy_subtree_node!(
-                            IntLiteral,
-                            IntLiteralNode,
-                            create_dummy_token(IntLiteral, rhs)
-                        ),
-                        operator: match operator_type {
-                            TokenKind::PlusSign => BinaryOperator::Addition,
-                            TokenKind::MinusSign => BinaryOperator::Subtraction,
-                            TokenKind::Asterisk => BinaryOperator::Multiplication,
-                            TokenKind::Slash => BinaryOperator::Division,
-                            _ => panic!("Unknown built in operator type {operator_type:?}"),
+    fn test_built_in_binary_operators_return_correct_values() {
+        macro_rules! build_binary_operator_tree {
+            ($lhs:expr, $rhs:expr, $operator_token:expr, $operand_subtree_variant:ident, $operand_subtree_node_type:ident, $operand_token_type:ident) => {
+                ExpressionNode {
+                    subtree_node: ExpressionSubtreeRootNode::BinaryOperator(Box::new(
+                        BinaryOperatorNode {
+                            lhs: create_dummy_subtree_node!(
+                                $operand_subtree_variant,
+                                $operand_subtree_node_type,
+                                create_dummy_token($operand_token_type, $lhs)
+                            ),
+                            rhs: create_dummy_subtree_node!(
+                                $operand_subtree_variant,
+                                $operand_subtree_node_type,
+                                create_dummy_token($operand_token_type, $rhs)
+                            ),
+                            operator: BinaryOperator::from(&$operator_token),
                         },
-                    },
-                )),
-            }
+                    )),
+                }
+            };
         }
 
         assert_eq!(
-            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree(
+            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree!(
                 "2",
                 "2",
-                TokenKind::PlusSign
+                *DUMMY_TOKEN_PLUS_SIGN,
+                IntLiteral,
+                IntLiteralNode,
+                IntLiteral
             )),
             Ok(NackValue {
                 value_type: String::from("Int"),
@@ -246,10 +243,13 @@ mod expression_tests {
             })
         );
         assert_eq!(
-            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree(
+            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree!(
                 "2",
                 "2",
-                TokenKind::MinusSign
+                *DUMMY_TOKEN_MINUS_SIGN,
+                IntLiteral,
+                IntLiteralNode,
+                IntLiteral
             )),
             Ok(NackValue {
                 value_type: String::from("Int"),
@@ -257,10 +257,13 @@ mod expression_tests {
             })
         );
         assert_eq!(
-            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree(
+            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree!(
                 "8",
                 "5",
-                TokenKind::Asterisk
+                *DUMMY_TOKEN_MULT_SIGN,
+                IntLiteral,
+                IntLiteralNode,
+                IntLiteral
             )),
             Ok(NackValue {
                 value_type: String::from("Int"),
@@ -268,14 +271,45 @@ mod expression_tests {
             })
         );
         assert_eq!(
-            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree(
+            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree!(
                 "6",
                 "2",
-                TokenKind::Slash
+                *DUMMY_TOKEN_DIVIDE_SIGN,
+                IntLiteral,
+                IntLiteralNode,
+                IntLiteral
             )),
             Ok(NackValue {
                 value_type: String::from("Int"),
                 value: CoreNackValue::Int(3)
+            })
+        );
+        assert_eq!(
+            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree!(
+                TRUE_KEYWORD,
+                FALSE_KEYWORD,
+                create_dummy_token(Identifier, AND_KEYWORD),
+                BoolLiteral,
+                BoolLiteralNode,
+                Identifier
+            )),
+            Ok(NackValue {
+                value_type: String::from("Bool"),
+                value: CoreNackValue::Bool(false)
+            })
+        );
+        assert_eq!(
+            NackInterpreter::new().evaluate_expression_tree(&build_binary_operator_tree!(
+                TRUE_KEYWORD,
+                FALSE_KEYWORD,
+                create_dummy_token(Identifier, OR_KEYWORD),
+                BoolLiteral,
+                BoolLiteralNode,
+                Identifier
+            )),
+            Ok(NackValue {
+                value_type: String::from("Bool"),
+                value: CoreNackValue::Bool(true)
             })
         );
     }
