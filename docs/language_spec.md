@@ -34,6 +34,7 @@ An expression wrapped in parentheses overrides the natural precedence of the ope
 The following is a list of reserved language keywords that cannot be used as user-defined identifiers:
 
 - `and`
+- `let`
 - `not`
 - `or`
 
