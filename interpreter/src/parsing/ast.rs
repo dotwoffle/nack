@@ -7,16 +7,16 @@ use crate::parsing::{AND_KEYWORD, NOT_KEYWORD, OR_KEYWORD};
 use std::fmt::{Debug, Formatter};
 
 /// This enum represents an AST node containing a program unit subtree.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ProgramUnitNode {
-    /// An expression node.
-    Expression(ExpressionNode),
+    /// A value definition node.
+    ValDef(ValDefNode),
 }
 
 impl ProgramUnitNode {
     fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProgramUnitNode::Expression(expr_node) => expr_node.dump(indent, f),
+            ProgramUnitNode::ValDef(val_def_node) => val_def_node.dump(indent, f),
         }
     }
 }
@@ -158,6 +158,7 @@ impl From<&Token> for UnaryOperator {
 }
 
 /// This struct represents the root node of a Nack AST.
+#[derive(PartialEq)]
 pub struct NackProgramAST {
     /// Each program unit subtree in this program.
     pub program_units: Vec<ProgramUnitNode>,
@@ -221,6 +222,19 @@ impl UnaryOperatorNode {
     fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}{:?}", "  ".repeat(indent), self.operator)?;
         self.expression.dump(indent + 1, f)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ValDefNode {
+    pub name: String,
+    pub expression: ExpressionNode,
+}
+
+impl ValDefNode {
+    fn dump(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}{:?}", "  ".repeat(indent), self.name)?;
+        self.expression.dump(indent, f)
     }
 }
 

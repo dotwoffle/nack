@@ -2,7 +2,7 @@ use crate::lexing::{SyntaxError, Token, TokenKind, TokenStream};
 use crate::parsing::ast::{
     BinaryOperator, BinaryOperatorNode, BoolLiteralNode, ExpressionNode, ExpressionSubtreeRootNode,
     IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode, UnaryOperator,
-    UnaryOperatorNode,
+    UnaryOperatorNode, ValDefNode,
 };
 use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, NOT_KEYWORD, OR_KEYWORD, TRUE_KEYWORD};
 
@@ -56,6 +56,10 @@ impl NackParser {
                 message: String::from("Expected an expression here"),
             }),
         }
+    }
+
+    fn handle_val_def_rule(&mut self) -> Result<ValDefNode, SyntaxError> {
+        todo!()
     }
 
     /// Parses the EXPRESSION language rule and returns the root of the produced subtree.
@@ -213,11 +217,93 @@ impl NackParser {
 mod parser_tests {
     use super::*;
     use crate::create_dummy_subtree_node;
+    use crate::parsing::LET_KEYWORD;
     use crate::parsing::ast::IdentifierNode;
     use crate::test::{
-        DUMMY_TOKEN_BOOL, DUMMY_TOKEN_CLOSE_PAREN, DUMMY_TOKEN_EOF, DUMMY_TOKEN_IDENTIFIER,
-        DUMMY_TOKEN_INT, DUMMY_TOKEN_OPEN_PAREN, DUMMY_TOKEN_PLUS_SIGN,
+        DUMMY_TOKEN_BOOL, DUMMY_TOKEN_CLOSE_PAREN, DUMMY_TOKEN_EOF, DUMMY_TOKEN_EQUALS,
+        DUMMY_TOKEN_IDENTIFIER, DUMMY_TOKEN_INT, DUMMY_TOKEN_OPEN_PAREN, DUMMY_TOKEN_PLUS_SIGN,
+        create_dummy_token,
     };
+
+    impl Clone for NackParser {
+        fn clone(&self) -> Self {
+            Self {
+                tokens: self.tokens.clone(),
+            }
+        }
+    }
+
+    #[test]
+    fn test_handle_program_rule_correctly_parses() -> Result<(), SyntaxError> {
+        let mut letStatementParser = NackParser::new(vec![
+            create_dummy_token(TokenKind::Identifier, LET_KEYWORD),
+            DUMMY_TOKEN_IDENTIFIER.clone(),
+            DUMMY_TOKEN_EQUALS.clone(),
+            DUMMY_TOKEN_INT.clone(),
+        ]);
+
+        assert_eq!(
+            letStatementParser.clone().handle_program_rule()?,
+            NackProgramAST {
+                program_units: vec![letStatementParser.handle_program_unit_rule()?]
+            }
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_handle_program_rule_returns_error_for_malformed_token_stream() {
+        todo!("Program units not well defined yet")
+    }
+
+    #[test]
+    fn test_handle_program_unit_rule_correctly_parses() -> Result<(), SyntaxError> {
+        let mut letStatementParser = NackParser::new(vec![
+            create_dummy_token(TokenKind::Identifier, LET_KEYWORD),
+            DUMMY_TOKEN_IDENTIFIER.clone(),
+            DUMMY_TOKEN_EQUALS.clone(),
+            DUMMY_TOKEN_INT.clone(),
+        ]);
+
+        assert_eq!(
+            letStatementParser.clone().handle_program_unit_rule()?,
+            ProgramUnitNode::ValDef(letStatementParser.handle_val_def_rule()?)
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_handle_program_unit_rule_returns_error_for_malformed_token_stream() {
+        todo!("Program units not well defined yet")
+    }
+
+    #[test]
+    fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
+        let mut identifierParser = NackParser::new(vec![
+            DUMMY_TOKEN_IDENTIFIER.clone(),
+            DUMMY_TOKEN_EOF.clone(),
+        ]);
+
+        assert_eq!(
+            identifierParser.clone().handle_expression_rule()?,
+            ExpressionNode {
+                subtree_node: identifierParser.handle_and_expr_rule()?
+            }
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_handle_expression_rule_returns_error_for_malformed_token_stream() {
+        assert!(
+            NackParser::new(vec![DUMMY_TOKEN_EOF.clone()])
+                .handle_expression_rule()
+                .is_err()
+        );
+    }
 
     #[test]
     fn test_handle_expr_atom_rule_correctly_parses() -> Result<(), SyntaxError> {
@@ -268,54 +354,5 @@ mod parser_tests {
                 .handle_expr_atom_rule()
                 .is_err()
         );
-    }
-
-    #[test]
-    fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
-        assert_eq!(
-            NackParser::new(vec![
-                DUMMY_TOKEN_IDENTIFIER.clone(),
-                DUMMY_TOKEN_EOF.clone()
-            ])
-            .handle_expression_rule()?,
-            ExpressionNode {
-                subtree_node: create_dummy_subtree_node!(
-                    Identifier,
-                    IdentifierNode,
-                    DUMMY_TOKEN_IDENTIFIER
-                )
-            }
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_handle_expression_rule_returns_error_for_malformed_token_stream() {
-        assert!(
-            NackParser::new(vec![DUMMY_TOKEN_EOF.clone()])
-                .handle_expression_rule()
-                .is_err()
-        );
-    }
-
-    #[test]
-    fn test_handle_program_unit_rule_correctly_parses() -> Result<(), SyntaxError> {
-        todo!("Program units not well defined yet")
-    }
-
-    #[test]
-    fn test_handle_program_unit_rule_returns_error_for_malformed_token_stream() {
-        todo!("Program units not well defined yet")
-    }
-
-    #[test]
-    fn test_handle_program_rule_correctly_parses() -> Result<(), SyntaxError> {
-        todo!("Program units not well defined yet")
-    }
-
-    #[test]
-    fn test_handle_program_rule_returns_error_for_malformed_token_stream() {
-        todo!("Program units not well defined yet")
     }
 }

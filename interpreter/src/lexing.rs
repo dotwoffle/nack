@@ -9,6 +9,8 @@ pub enum TokenKind {
     Asterisk,
     /// A special token type indicating the end of the token stream.
     Eof,
+    /// An equals sign.
+    Equals,
     /// Identifiers and keywords.
     Identifier,
     /// Any amount of contiguous whitespace.
@@ -198,6 +200,10 @@ static TOKEN_PATTERNS: LazyLock<HashMap<TokenKind, Regex>> = LazyLock::new(|| {
         Regex::new(r"\*").expect("Failed to compile regex for Asterisk"),
     );
     m.insert(
+        TokenKind::Equals,
+        Regex::new(r"=").expect("Failed to compile regex for Equals"),
+    );
+    m.insert(
         TokenKind::Identifier,
         Regex::new(r"[_a-zA-Z][_a-zA-Z0-9]*").expect("Failed to compile regex for Identifier"),
     );
@@ -253,6 +259,14 @@ fn find_next_token(source_string: &str) -> Option<(TokenKind, &str)> {
 #[cfg(test)]
 mod lexing_tests {
     use super::*;
+
+    impl Clone for TokenStream {
+        fn clone(&self) -> Self {
+            Self {
+                tokens: self.tokens,
+            }
+        }
+    }
 
     #[test]
     fn test_identifier_regex_matches_correct_strings() -> Result<(), &'static str> {

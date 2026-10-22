@@ -21,6 +21,8 @@ pub static DUMMY_TOKEN_MULT_SIGN: LazyLock<Token> =
     LazyLock::new(|| create_dummy_token(TokenKind::Asterisk, "*"));
 pub static DUMMY_TOKEN_DIVIDE_SIGN: LazyLock<Token> =
     LazyLock::new(|| create_dummy_token(TokenKind::Slash, "/"));
+pub static DUMMY_TOKEN_EQUALS: LazyLock<Token> =
+    LazyLock::new(|| create_dummy_token(TokenKind::Equals, "="));
 
 #[macro_export]
 macro_rules! create_dummy_subtree_node {
