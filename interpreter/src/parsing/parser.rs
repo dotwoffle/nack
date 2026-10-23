@@ -4,7 +4,9 @@ use crate::parsing::ast::{
     IdentifierNode, IntLiteralNode, NackProgramAST, ProgramUnitNode, UnaryOperator,
     UnaryOperatorNode, ValDefNode,
 };
-use crate::parsing::{AND_KEYWORD, FALSE_KEYWORD, NOT_KEYWORD, OR_KEYWORD, TRUE_KEYWORD};
+use crate::parsing::{
+    AND_KEYWORD, FALSE_KEYWORD, LET_KEYWORD, NOT_KEYWORD, OR_KEYWORD, TRUE_KEYWORD,
+};
 
 /// This struct provides a parser used to turn a series of Nack language tokens into an AST.
 ///
@@ -47,14 +49,13 @@ impl NackParser {
 
     /// Parses the PROGRAM_UNIT language rule and returns the root of the produced subtree.
     fn handle_program_unit_rule(&mut self) -> Result<ProgramUnitNode, SyntaxError> {
-        match self.tokens.peek(0).kind {
-            TokenKind::Identifier | TokenKind::IntLiteral | TokenKind::LeftParen => self
-                .handle_expression_rule()
-                .map(ProgramUnitNode::Expression),
-            _ => Err(SyntaxError {
+        if self.tokens.next_token_is_keyword(&[LET_KEYWORD]) {
+            self.handle_val_def_rule().map(ProgramUnitNode::ValDef)
+        } else {
+            Err(SyntaxError {
                 position: self.tokens.peek(0).position,
-                message: String::from("Expected an expression here"),
-            }),
+                message: String::from("Expected a value definition here"),
+            })
         }
     }
 
@@ -235,7 +236,7 @@ mod parser_tests {
 
     #[test]
     fn test_handle_program_rule_correctly_parses() -> Result<(), SyntaxError> {
-        let mut letStatementParser = NackParser::new(vec![
+        let mut let_statement_parser = NackParser::new(vec![
             create_dummy_token(TokenKind::Identifier, LET_KEYWORD),
             DUMMY_TOKEN_IDENTIFIER.clone(),
             DUMMY_TOKEN_EQUALS.clone(),
@@ -243,9 +244,9 @@ mod parser_tests {
         ]);
 
         assert_eq!(
-            letStatementParser.clone().handle_program_rule()?,
+            let_statement_parser.clone().handle_program_rule()?,
             NackProgramAST {
-                program_units: vec![letStatementParser.handle_program_unit_rule()?]
+                program_units: vec![let_statement_parser.handle_program_unit_rule()?]
             }
         );
 
@@ -254,12 +255,20 @@ mod parser_tests {
 
     #[test]
     fn test_handle_program_rule_returns_error_for_malformed_token_stream() {
-        todo!("Program units not well defined yet")
+        assert!(
+            NackParser::new(vec![
+                create_dummy_token(TokenKind::Identifier, LET_KEYWORD),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_EOF.clone()
+            ])
+            .parse()
+            .is_err()
+        );
     }
 
     #[test]
     fn test_handle_program_unit_rule_correctly_parses() -> Result<(), SyntaxError> {
-        let mut letStatementParser = NackParser::new(vec![
+        let mut let_statement_parser = NackParser::new(vec![
             create_dummy_token(TokenKind::Identifier, LET_KEYWORD),
             DUMMY_TOKEN_IDENTIFIER.clone(),
             DUMMY_TOKEN_EQUALS.clone(),
@@ -267,8 +276,8 @@ mod parser_tests {
         ]);
 
         assert_eq!(
-            letStatementParser.clone().handle_program_unit_rule()?,
-            ProgramUnitNode::ValDef(letStatementParser.handle_val_def_rule()?)
+            let_statement_parser.clone().handle_program_unit_rule()?,
+            ProgramUnitNode::ValDef(let_statement_parser.handle_val_def_rule()?)
         );
 
         Ok(())
@@ -276,20 +285,29 @@ mod parser_tests {
 
     #[test]
     fn test_handle_program_unit_rule_returns_error_for_malformed_token_stream() {
-        todo!("Program units not well defined yet")
+        assert!(
+            NackParser::new(vec![
+                create_dummy_token(TokenKind::Identifier, LET_KEYWORD),
+                DUMMY_TOKEN_IDENTIFIER.clone(),
+                DUMMY_TOKEN_INT.clone(),
+                DUMMY_TOKEN_EOF.clone()
+            ])
+            .parse()
+            .is_err()
+        );
     }
 
     #[test]
     fn test_handle_expression_rule_correctly_parses() -> Result<(), SyntaxError> {
-        let mut identifierParser = NackParser::new(vec![
+        let mut identifier_parser = NackParser::new(vec![
             DUMMY_TOKEN_IDENTIFIER.clone(),
             DUMMY_TOKEN_EOF.clone(),
         ]);
 
         assert_eq!(
-            identifierParser.clone().handle_expression_rule()?,
+            identifier_parser.clone().handle_expression_rule()?,
             ExpressionNode {
-                subtree_node: identifierParser.handle_and_expr_rule()?
+                subtree_node: identifier_parser.handle_and_expr_rule()?
             }
         );
 

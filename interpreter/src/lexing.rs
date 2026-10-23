@@ -263,7 +263,7 @@ mod lexing_tests {
     impl Clone for TokenStream {
         fn clone(&self) -> Self {
             Self {
-                tokens: self.tokens,
+                tokens: self.tokens.clone(),
             }
         }
     }
