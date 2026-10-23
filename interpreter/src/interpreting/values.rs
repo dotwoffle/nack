@@ -15,3 +15,21 @@ pub struct NackValue {
     /// The actual underlying value.
     pub value: CoreNackValue,
 }
+
+pub struct LazyValue {
+    value: Option<NackValue>,
+    evaluator: fn() -> NackValue,
+}
+
+impl LazyValue {
+    pub fn new(evaluator: fn() -> NackValue) -> LazyValue {
+        Self {
+            value: None,
+            evaluator,
+        }
+    }
+
+    pub fn value(&mut self) -> &NackValue {
+        self.value.get_or_insert_with(self.evaluator)
+    }
+}
