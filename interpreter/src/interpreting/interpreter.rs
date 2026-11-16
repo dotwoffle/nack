@@ -2,7 +2,7 @@ use crate::interpreting::values::{CoreNackValue, NackValue};
 use crate::parsing::TRUE_KEYWORD;
 use crate::parsing::ast::{
     BinaryOperator, ExpressionNode, ExpressionSubtreeRootNode, NackProgramAST, ProgramUnitNode,
-    UnaryOperator,
+    UnaryOperator, ValDefNode,
 };
 
 /// This struct provides an interpreter for Nack ASTs.
@@ -29,15 +29,12 @@ impl NackInterpreter {
         program_unit_node: &ProgramUnitNode,
     ) -> Result<(), InterpreterError> {
         match program_unit_node {
-            ProgramUnitNode::ValDef(val_def_node) => {
-                println!(
-                    "{:?}",
-                    self.evaluate_expression_tree(&val_def_node.expression)?
-                        .value
-                );
-                Ok(())
-            }
+            ProgramUnitNode::ValDef(val_def_node) => self.evaluate_value_def(val_def_node),
         }
+    }
+
+    fn evaluate_value_def(&mut self, val_def_node: &ValDefNode) -> Result<(), InterpreterError> {
+        todo!()
     }
 
     /// Evaluates an expression tree to produce a Nack value.
@@ -367,5 +364,35 @@ mod expression_tests {
                 value: CoreNackValue::Bool(false)
             })
         );
+    }
+}
+
+#[cfg(test)]
+mod value_tests {
+    use crate::interpreting::interpreter::InterpreterError;
+    use crate::parsing::ast::ExpressionSubtreeRootNode;
+    use crate::{
+        create_dummy_subtree_node,
+        interpreting::NackInterpreter,
+        parsing::ast::{ExpressionNode, IntLiteralNode, ValDefNode},
+        test::DUMMY_TOKEN_INT,
+    };
+
+    #[test]
+    fn test_value_declaration_adds_value_to_current_environment() -> Result<(), InterpreterError> {
+        let mut interpreter = NackInterpreter::new();
+
+        interpreter.evaluate_value_def(&ValDefNode {
+            name: String::from("foo"),
+            expression: ExpressionNode {
+                subtree_node: create_dummy_subtree_node!(
+                    IntLiteral,
+                    IntLiteralNode,
+                    DUMMY_TOKEN_INT
+                ),
+            },
+        })?;
+
+        Ok(())
     }
 }
